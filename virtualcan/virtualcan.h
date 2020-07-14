@@ -76,12 +76,6 @@
 
 #define DEVICE_NAME_STRING "kvvirtualcan"
 
-#define NR_CHANNELS 2
-#define MAX_CHANNELS NR_CHANNELS
-
-#define NR_VIRTUAL_DEV 1
-#define VIRTUAL_MAX_DEV NR_VIRTUAL_DEV
-
 #define MAX_ERROR_COUNT 128
 #define ERROR_RATE 30000
 #define VIRTUAL_BYTES_PER_CIRCUIT 0x20
@@ -101,5 +95,12 @@ typedef struct virtualCardData {
 	/* Ports and addresses */
 	unsigned pciIf;
 } virtualCardData;
+
+// Helper struct for allocation
+typedef struct {
+	VCanChanData** dataPtrArray;
+	VCanChanData* vChd;
+	virtualChanData* hChd;
+} ChanHelperStruct;
 
 #endif /* _VIRTUAL_HW_IF_H_ */

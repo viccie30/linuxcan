@@ -105,6 +105,14 @@ MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("KVASER");
 MODULE_DESCRIPTION("VirtualCAN CAN module.");
 
+static int nrChannels = 2;
+static int nrDevs = 1;
+
+module_param_named(nr_channels, nrChannels, int, 0);
+MODULE_PARM_DESC(nr_channels, "Number of channels per virtual device");
+module_param_named(nr_devs, nrDevs, int, 0);
+MODULE_PARM_DESC(nr_devs, "Number of virtual devices");
+
 //
 // If you do not define VIRTUAL_DEBUG at all, all the debug code will be
 // left out.  If you compile with VIRTUAL_DEBUG=0, the debug code will
@@ -208,7 +216,10 @@ static unsigned long getTime(VCanCardData* vCard)
 //======================================================================
 static int virtualProcRead(struct seq_file* m, void* v)
 {
-	seq_printf(m, "\ntotal channels %d\n", NR_CHANNELS * NR_VIRTUAL_DEV);
+	seq_printf(m,
+	           "total channels %d\nchannels per virtual device %d\ntvirtual "
+	           "devices %d\n",
+	           nrChannels * nrDevs, nrChannels, nrDevs);
 
 	return 0;
 }
@@ -231,7 +242,7 @@ static int virtualProbe(VCanCardData* vCd)
 	int i;
 	static int serial_low = 0;
 
-	vCd->nrChannels = NR_CHANNELS;
+	vCd->nrChannels = nrChannels;
 	DEBUGPRINT(1, "Kvaser virtual with %d channels found\n", vCd->nrChannels);
 
 	// As a workaround to show which virtual channels that are connected to
@@ -258,7 +269,7 @@ static int virtualProbe(VCanCardData* vCd)
 	                VCAN_CHANNEL_CAP_EXTENDED_CAN | VCAN_CHANNEL_CAP_VIRTUAL |
 	                VCAN_CHANNEL_CAP_SIMULATED | VCAN_CHANNEL_CAP_TXREQUEST |
 	                VCAN_CHANNEL_CAP_TXACKNOWLEDGE | VCAN_CHANNEL_CAP_CANFD,
-	        0xFFFFFFFF, 0xFFFFFFFF, NR_CHANNELS);
+	        0xFFFFFFFF, 0xFFFFFFFF, nrChannels);
 
 	vCd->hw_type = HWTYPE_VIRTUAL;
 
@@ -622,13 +633,6 @@ static int virtualInitData(VCanCardData* vCard)
 //======================================================================
 static int virtualInitOne(void)
 {
-	// Helper struct for allocation
-	typedef struct {
-		VCanChanData* dataPtrArray[MAX_CHANNELS];
-		VCanChanData vChd[MAX_CHANNELS];
-		virtualChanData hChd[MAX_CHANNELS];
-	} ChanHelperStruct;
-
 	ChanHelperStruct* chs;
 	int chNr;
 	VCanCardData* vCard;
@@ -648,8 +652,24 @@ static int virtualInitOne(void)
 		goto chan_alloc_err;
 	}
 
+	chs->dataPtrArray =
+	        kmalloc_array(nrChannels, sizeof(VCanChanData*), GFP_KERNEL);
+	if (!chs->dataPtrArray) {
+		goto dataPtrArray_alloc_err;
+	}
+
+	chs->vChd = kcalloc(nrChannels, sizeof(VCanChanData), GFP_KERNEL);
+	if (!chs->vChd) {
+		goto vChd_alloc_err;
+	}
+
+	chs->hChd = kcalloc(nrChannels, sizeof(virtualChanData), GFP_KERNEL);
+	if (!chs->hChd) {
+		goto hChd_alloc_err;
+	}
+
 	// Init array and hwChanData
-	for (chNr = 0; chNr < MAX_CHANNELS; chNr++) {
+	for (chNr = 0; chNr < nrChannels; chNr++) {
 		chs->dataPtrArray[chNr] = &chs->vChd[chNr];
 		chs->vChd[chNr].hwChanData = &chs->hChd[chNr];
 		chs->vChd[chNr].minorNr = -1; // No preset minor number
@@ -673,8 +693,15 @@ static int virtualInitOne(void)
 
 	return 1;
 
-chan_alloc_err:
 probe_err:
+	kfree(chs->hChd);
+hChd_alloc_err:
+	kfree(chs->vChd);
+vChd_alloc_err:
+	kfree(chs->dataPtrArray);
+dataPtrArray_alloc_err:
+	kfree(chs);
+chan_alloc_err:
 	kfree(vCard);
 card_alloc_err:
 
@@ -685,6 +712,7 @@ static void virtualRemoveOne(VCanCardData* vCard)
 {
 	VCanChanData* vChan;
 	int chNr;
+	ChanHelperStruct* chs;
 
 	for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
 		vChan = vCard->chanData[chNr];
@@ -695,6 +723,10 @@ static void virtualRemoveOne(VCanCardData* vCard)
 		}
 	}
 
+	chs = (ChanHelperStruct*) vCard->chanData;
+	kfree(chs->hChd);
+	kfree(chs->vChd);
+	kfree(chs->dataPtrArray);
 	kfree(vCard->chanData);
 	kfree(vCard);
 }
@@ -707,7 +739,7 @@ static int virtualInitAllDevices(void)
 	int i;
 
 	driverData.deviceName = DEVICE_NAME_STRING;
-	for (i = 0; i < NR_VIRTUAL_DEV; i++) {
+	for (i = 0; i < nrDevs; i++) {
 		virtualInitOne();
 	}
 
@@ -741,8 +773,12 @@ static int virtualCloseAllDevices(void)
 
 int init_module(void)
 {
+	if (nrDevs <= 0 || nrChannels <= 0 || 128 / nrDevs < nrChannels) {
+		return -ERANGE;
+	}
+
 	driverData.hwIf = &hwIf;
-	return vCanInit(&driverData, NR_VIRTUAL_DEV * MAX_CHANNELS);
+	return vCanInit(&driverData, nrDevs * nrChannels);
 }
 
 void cleanup_module(void)
