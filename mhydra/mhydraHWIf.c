@@ -2823,12 +2823,9 @@ static int setup_bulk_in_endpoint(struct usb_endpoint_descriptor* endpoint,
 	        le16_to_cpu(endpoint->wMaxPacketSize);
 
 	if (size != 0) {
-		dev->bulk_in[pipe_in_id].buffer = kmalloc(size, GFP_KERNEL);
+		dev->bulk_in[pipe_in_id].buffer = kzalloc(size, GFP_KERNEL);
 
-		if (dev->bulk_in[pipe_in_id].buffer) {
-			memset(dev->bulk_in[pipe_in_id].buffer, 0, size);
-		}
-		else {
+		if (!dev->bulk_in[pipe_in_id].buffer) {
 			DEBUGPRINT(1, (TXT("Couldn't allocate bulk_in_buffer (id:%d)\n"),
 			               pipe_in_id));
 			stat = -1;
@@ -3317,25 +3314,23 @@ static int mhydra_allocate(VCanCardData** in_vCard)
 	DEBUGPRINT(3, (TXT("mhydra: _allocate\n")));
 
 	// Allocate data area for this card
-	vCard = kmalloc(sizeof(VCanCardData) + sizeof(MhydraCardData), GFP_KERNEL);
+	vCard = kzalloc(sizeof(VCanCardData) + sizeof(MhydraCardData), GFP_KERNEL);
 	DEBUGPRINT(2, (TXT("MALLOC _allocate\n")));
 	if (!vCard) {
 		DEBUGPRINT(1, (TXT("alloc error\n")));
 		goto card_alloc_err;
 	}
-	memset(vCard, 0, sizeof(VCanCardData) + sizeof(MhydraCardData));
 
 	// hwCardData is directly after VCanCardData
 	vCard->hwCardData = vCard + 1;
 
 	// Allocate memory for n channels
-	chs = kmalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
+	chs = kzalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
 	DEBUGPRINT(2, (TXT("MALLOC _alloc helperstruct\n")));
 	if (!chs) {
 		DEBUGPRINT(1, (TXT("chan alloc error\n")));
 		goto chan_alloc_err;
 	}
-	memset(chs, 0, sizeof(ChanHelperStruct));
 
 	// Init array and hwChanData
 	for (chNr = 0; chNr < HYDRA_MAX_CARD_CHANNELS; chNr++) {
@@ -4441,14 +4436,11 @@ static int mhydra_objbuf_alloc(VCanChanData* chd, int bufType, int* bufNo)
 
 	if (!mhydraChan->objbufs) {
 		DEBUGPRINT(4, (TXT("Allocating mhydraChan->objbufs[]\n")));
-		mhydraChan->objbufs = kmalloc(
-		        sizeof(OBJECT_BUFFER) * dev->autoTxBufferCount, GFP_KERNEL);
+		mhydraChan->objbufs = kcalloc(dev->autoTxBufferCount,
+		                              sizeof(OBJECT_BUFFER), GFP_KERNEL);
 		if (!mhydraChan->objbufs) {
 			return VCAN_STAT_NO_MEMORY;
 		}
-
-		memset(mhydraChan->objbufs, 0,
-		       sizeof(OBJECT_BUFFER) * dev->autoTxBufferCount);
 	}
 
 	for (i = 0; i < dev->autoTxBufferCount; i++) {

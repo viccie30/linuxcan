@@ -1809,22 +1809,20 @@ static int pciCanInitOne(struct pci_dev* dev, const struct pci_device_id* id)
 	VCanCardData* vCard;
 
 	// Allocate data area for this card
-	vCard = kmalloc(sizeof(VCanCardData) + sizeof(PciCanCardData), GFP_KERNEL);
+	vCard = kzalloc(sizeof(VCanCardData) + sizeof(PciCanCardData), GFP_KERNEL);
 	if (!vCard) {
 		goto card_alloc_err;
 	}
-	memset(vCard, 0, sizeof(VCanCardData) + sizeof(PciCanCardData));
 
 	// hwCardData is directly after VCanCardData
 	vCard->hwCardData = vCard + 1;
 	hCd = vCard->hwCardData;
 
 	// Allocate memory for n channels
-	chs = kmalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
+	chs = kzalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
 	if (!chs) {
 		goto chan_alloc_err;
 	}
-	memset(chs, 0, sizeof(ChanHelperStruct));
 
 	// Init array and hwChanData
 	for (chNr = 0; chNr < MAX_CARD_CHANNELS; chNr++) {

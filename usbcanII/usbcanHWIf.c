@@ -1657,7 +1657,7 @@ static int usbcan_plugin(struct usb_interface* interface,
 			buffer_size = MAX_PACKET_IN;
 			dev->bulk_in_size = buffer_size;
 			dev->bulk_in_endpointAddr = endpoint->bEndpointAddress;
-			dev->bulk_in_buffer = kmalloc(buffer_size, GFP_KERNEL);
+			dev->bulk_in_buffer = kzalloc(buffer_size, GFP_KERNEL);
 			dev->bulk_in_MaxPacketSize = le16_to_cpu(endpoint->wMaxPacketSize);
 			DEBUGPRINT(2, (TXT("MaxPacketSize in = %d\n"),
 			               dev->bulk_in_MaxPacketSize));
@@ -1667,7 +1667,6 @@ static int usbcan_plugin(struct usb_interface* interface,
 				DEBUGPRINT(1, (TXT("Couldn't allocate bulk_in_buffer\n")));
 				goto error;
 			}
-			memset(dev->bulk_in_buffer, 0, buffer_size);
 		}
 
 		if (!dev->bulk_out_endpointAddr &&
@@ -1826,25 +1825,23 @@ static int usbcan_allocate(VCanCardData** in_vCard)
 	DEBUGPRINT(3, (TXT("usbcan: _allocate\n")));
 
 	// Allocate data area for this card
-	vCard = kmalloc(sizeof(VCanCardData) + sizeof(UsbcanCardData), GFP_KERNEL);
+	vCard = kzalloc(sizeof(VCanCardData) + sizeof(UsbcanCardData), GFP_KERNEL);
 	DEBUGPRINT(2, (TXT("MALLOC _allocate\n")));
 	if (!vCard) {
 		DEBUGPRINT(1, (TXT("alloc error\n")));
 		goto card_alloc_err;
 	}
-	memset(vCard, 0, sizeof(VCanCardData) + sizeof(UsbcanCardData));
 
 	// hwCardData is directly after VCanCardData
 	vCard->hwCardData = vCard + 1;
 
 	// Allocate memory for n channels
-	chs = kmalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
+	chs = kzalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
 	DEBUGPRINT(2, (TXT("MALLOC _alloc helperstruct\n")));
 	if (!chs) {
 		DEBUGPRINT(1, (TXT("chan alloc error\n")));
 		goto chan_alloc_err;
 	}
-	memset(chs, 0, sizeof(ChanHelperStruct));
 
 	// Init array and hwChanData
 	for (chNr = 0; chNr < MAX_CARD_CHANNELS; chNr++) {
@@ -2595,13 +2592,11 @@ static int usbcan_objbuf_alloc(VCanChanData* chd, int bufType, int* bufNo)
 
 	if (!usbChan->objbufs) {
 		DEBUGPRINT(4, (TXT("Allocating usbChan->objbufs[]\n")));
-		usbChan->objbufs = kmalloc(
-		        sizeof(OBJECT_BUFFER) * dev->autoTxBufferCount, GFP_KERNEL);
+		usbChan->objbufs = kcalloc(dev->autoTxBufferCount,
+		                           sizeof(OBJECT_BUFFER), GFP_KERNEL);
 		if (!usbChan->objbufs) {
 			return VCAN_STAT_NO_MEMORY;
 		}
-		memset(usbChan->objbufs, 0,
-		       sizeof(OBJECT_BUFFER) * dev->autoTxBufferCount);
 	}
 
 	for (i = 0; i < dev->autoTxBufferCount; i++) {

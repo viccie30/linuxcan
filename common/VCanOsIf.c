@@ -805,11 +805,10 @@ int vCanOpen(struct inode* inode, struct file* filp)
 	}
 
 	// Allocate memory and zero the whole struct
-	openFileNodePtr = kmalloc(sizeof(VCanOpenFileNode), GFP_KERNEL);
+	openFileNodePtr = kzalloc(sizeof(VCanOpenFileNode), GFP_KERNEL);
 	if (openFileNodePtr == NULL) {
 		return -ENOMEM;
 	}
-	memset(openFileNodePtr, 0, sizeof(VCanOpenFileNode));
 
 	init_completion(&openFileNodePtr->ioctl_completion);
 	complete(&openFileNodePtr->ioctl_completion);
@@ -2393,14 +2392,12 @@ static int ioctl_blocking(VCanOpenFileNode* fileNodePtr, unsigned int ioctl_cmd,
 				int i;
 				if (!fileNodePtr->objbuf) {
 					fileNodePtr->objbuf =
-					        kmalloc(sizeof(OBJECT_BUFFER) * MAX_OBJECT_BUFFERS,
+					        kcalloc(MAX_OBJECT_BUFFERS, sizeof(OBJECT_BUFFER),
 					                GFP_KERNEL);
 					if (!fileNodePtr->objbuf) {
 						vStat = VCAN_STAT_NO_MEMORY;
 					}
 					else {
-						memset(fileNodePtr->objbuf, 0,
-						       sizeof(OBJECT_BUFFER) * MAX_OBJECT_BUFFERS);
 						objbuf_init(fileNodePtr);
 					}
 				}
@@ -3359,13 +3356,11 @@ int vCanInit(VCanDriverData* driverData, unsigned max_channels)
 	memset(driverData, 0, sizeof(VCanDriverData));
 
 	driverData->cardNumbers =
-	        kmalloc(sizeof(VCanCardNumberData) * max_channels, GFP_KERNEL);
+	        kcalloc(max_channels, sizeof(VCanCardNumberData), GFP_KERNEL);
 	if (driverData->cardNumbers == NULL) {
 		DEBUGPRINT(1, ("kmalloc() of cardNumbers failed"));
 		return -1;
 	}
-	memset(driverData->cardNumbers, 0,
-	       (sizeof(VCanCardNumberData) * max_channels));
 	driverData->maxCardnumber = max_channels;
 
 	spin_lock_init(&driverData->canCardsLock);

@@ -634,21 +634,19 @@ static int virtualInitOne(void)
 	VCanCardData* vCard;
 
 	// Allocate data area for this card
-	vCard = kmalloc(sizeof(VCanCardData) + sizeof(virtualCardData), GFP_KERNEL);
+	vCard = kzalloc(sizeof(VCanCardData) + sizeof(virtualCardData), GFP_KERNEL);
 	if (!vCard) {
 		goto card_alloc_err;
 	}
-	memset(vCard, 0, sizeof(VCanCardData) + sizeof(virtualCardData));
 
 	// hwCardData is directly after VCanCardData
 	vCard->hwCardData = vCard + 1;
 
 	// Allocate memory for n channels
-	chs = kmalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
+	chs = kzalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
 	if (!chs) {
 		goto chan_alloc_err;
 	}
-	memset(chs, 0, sizeof(ChanHelperStruct));
 
 	// Init array and hwChanData
 	for (chNr = 0; chNr < MAX_CHANNELS; chNr++) {

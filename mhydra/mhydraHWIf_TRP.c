@@ -150,11 +150,10 @@ static int allocate_block(VCanCardData* vCard)
 		return -1;
 
 	if (!dev->trpBuffer[i]) {
-		dev->trpBuffer[i] = kmalloc(TRP_BLOCK_SIZE, GFP_KERNEL);
+		dev->trpBuffer[i] = kzalloc(TRP_BLOCK_SIZE, GFP_KERNEL);
 		if (!dev->trpBuffer[i]) {
 			return -1;
 		}
-		memset(dev->trpBuffer[i], 0, TRP_BLOCK_SIZE);
 	}
 	dev->block_use |= (1 << i);
 	return i;
@@ -472,12 +471,11 @@ void printf_msg(VCanCardData* vCard, hydraHostCmd* cmd)
 	if (!vCard)
 		return;
 
-	devmsg = kmalloc(sizeof(*devmsg), GFP_KERNEL);
+	devmsg = kzalloc(sizeof(*devmsg), GFP_KERNEL);
 	if (devmsg == NULL) {
 		DEBUGPRINT(4, (TXT("devmsg not allocated\n")));
 		return;
 	}
-	memset(devmsg, 0, sizeof(*devmsg));
 
 	dmh = (dmHeader*) devmsg->payload;
 
@@ -553,12 +551,11 @@ void fatal_msg(VCanCardData* vCard, hydraHostCmd* tmpCmd)
 	if (!vCard)
 		return;
 
-	devmsg = kmalloc(sizeof(*devmsg), GFP_KERNEL);
+	devmsg = kzalloc(sizeof(*devmsg), GFP_KERNEL);
 	if (devmsg == NULL) {
 		DEBUGPRINT(4, (TXT("devmsg not allocated\n")));
 		return;
 	}
-	memset(devmsg, 0, sizeof(*devmsg));
 
 	dmh = (dmHeader*) devmsg->payload;
 
@@ -627,12 +624,11 @@ void trp_msg(VCanCardData* vCard, hydraHostCmd* tmpCmd)
 	if (!vCard)
 		return;
 
-	devmsg = kmalloc(sizeof(*devmsg), GFP_KERNEL);
+	devmsg = kzalloc(sizeof(*devmsg), GFP_KERNEL);
 	if (devmsg == NULL) {
 		DEBUGPRINT(4, (TXT("devmsg not allocated\n")));
 		return;
 	}
-	memset(devmsg, 0, sizeof(*devmsg));
 
 	dmh = (dmHeader*) devmsg->payload;
 
@@ -789,11 +785,10 @@ static int mhydra_local_device_messages_subscription(VCanCardData* vCard,
 			int size = DM_BUFFER_SIZE + (MAX_HE_COUNT * TRP_CONTAINERS_PER_HE +
 			                             TRP_CONTAINERS_EXTRA) *
 			                                    sizeof(trpContainer);
-			dev->dmBuffer = kmalloc(size, GFP_KERNEL);
+			dev->dmBuffer = kzalloc(size, GFP_KERNEL);
 			if (!dev->dmBuffer) {
 				return VCAN_STAT_NO_MEMORY;
 			}
-			memset(dev->dmBuffer, 0, size);
 			dev->truck = (trpContainer*) (dev->dmBuffer + DM_BUFFER_SIZE);
 		}
 

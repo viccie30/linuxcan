@@ -1716,22 +1716,20 @@ static int pciCanInitOne(struct pci_dev* dev, const struct pci_device_id* id)
 	VCanCardData* vCard;
 
 	// Allocate data area for this card
-	vCard = kmalloc(sizeof(VCanCardData) + sizeof(PciCan2CardData), GFP_KERNEL);
+	vCard = kzalloc(sizeof(VCanCardData) + sizeof(PciCan2CardData), GFP_KERNEL);
 	if (!vCard) {
 		goto card_alloc_err;
 	}
-	memset(vCard, 0, sizeof(VCanCardData) + sizeof(PciCan2CardData));
 
 	// hwCardData is directly after VCanCardData
 	vCard->hwCardData = vCard + 1;
 	hCd = vCard->hwCardData;
 
 	// Allocate memory for n channels
-	chs = kmalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
+	chs = kzalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
 	if (!chs) {
 		goto chan_alloc_err;
 	}
-	memset(chs, 0, sizeof(ChanHelperStruct));
 
 	// Init array and hwChanData
 	for (chNr = 0; chNr < MAX_CARD_CHANNELS; chNr++) {
@@ -2007,14 +2005,11 @@ static int pciCanObjbufAlloc(VCanChanData* chd, int bufType, int* bufNo)
 
 	if (!hChd->objbufs) {
 		DEBUGPRINT(4, "Allocating hChd->objbufs[]\n");
-		hChd->objbufs = kmalloc(sizeof(OBJECT_BUFFER) * dev->autoTxBufferCount,
+		hChd->objbufs = kcalloc(dev->autoTxBufferCount, sizeof(OBJECT_BUFFER),
 		                        GFP_KERNEL);
 		if (!hChd->objbufs) {
 			return VCAN_STAT_NO_MEMORY;
 		}
-
-		memset(hChd->objbufs, 0,
-		       sizeof(OBJECT_BUFFER) * dev->autoTxBufferCount);
 	}
 
 	for (i = 0; i < dev->autoTxBufferCount; i++) {
