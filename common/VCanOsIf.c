@@ -3350,6 +3350,8 @@ int vCanInit(VCanDriverData* driverData, unsigned max_channels)
 	VCanHWInterface* hwIf;
 	int result;
 	dev_t devno;
+	unsigned n;
+	struct device* device;
 
 	// Initialise card and data structures
 	hwIf = driverData->hwIf;
@@ -3359,7 +3361,7 @@ int vCanInit(VCanDriverData* driverData, unsigned max_channels)
 	        kcalloc(max_channels, sizeof(VCanCardNumberData), GFP_KERNEL);
 	if (driverData->cardNumbers == NULL) {
 		DEBUGPRINT(1, ("kmalloc() of cardNumbers failed"));
-		return -1;
+		goto cardNumbers_alloc_err;
 	}
 	driverData->maxCardnumber = max_channels;
 
@@ -3369,14 +3371,12 @@ int vCanInit(VCanDriverData* driverData, unsigned max_channels)
 	if (result == -ENODEV) {
 		DEBUGPRINT(1, (TXT("No Kvaser %s cards found!\n"),
 		               driverData->deviceName));
-		kfree(driverData->cardNumbers);
-		return -1;
+		goto initAllDevices_err;
 	}
 	else if (result != 0) {
 		DEBUGPRINT(1, (TXT("Error (%d) initializing Kvaser %s driver!\n"),
 		               result, driverData->deviceName));
-		kfree(driverData->cardNumbers);
-		return -1;
+		goto initAllDevices_err;
 	}
 
 	if (!proc_create_data(driverData->deviceName,
@@ -3386,9 +3386,7 @@ int vCanInit(VCanDriverData* driverData, unsigned max_channels)
 	                      hwIf // client data
 	                      )) {
 		DEBUGPRINT(1, (TXT("Error creating proc read entry!\n")));
-		kfree(driverData->cardNumbers);
-		hwIf->closeAllDevices();
-		return -1;
+		goto proc_create_err;
 	}
 
 	// Register driver for device
@@ -3397,9 +3395,14 @@ int vCanInit(VCanDriverData* driverData, unsigned max_channels)
 	if (result < 0) {
 		DEBUGPRINT(1, ("alloc_chrdev_region(%u, %s) error = %d\n", max_channels,
 		               driverData->deviceName, result));
-		kfree(driverData->cardNumbers);
-		hwIf->closeAllDevices();
-		return -1;
+		goto alloc_chrdev_err;
+	}
+
+	driverData->class = class_create(THIS_MODULE, driverData->deviceName);
+	if (IS_ERR(driverData->class)) {
+		DEBUGPRINT(1, ("class_create() error = %ld\n",
+		               PTR_ERR(driverData->class)));
+		goto class_create_err;
 	}
 
 	cdev_init(&driverData->cdev, &fops);
@@ -3409,14 +3412,42 @@ int vCanInit(VCanDriverData* driverData, unsigned max_channels)
 	result = cdev_add(&driverData->cdev, devno, max_channels);
 	if (result < 0) {
 		DEBUGPRINT(1, ("cdev_add() error = %d\n", result));
-		kfree(driverData->cardNumbers);
-		hwIf->closeAllDevices();
-		return -1;
+		goto cdev_add_err;
+	}
+
+	for (n = 0; n < max_channels; ++n) {
+		device = device_create(driverData->class, NULL, MKDEV(MAJOR(devno), n),
+		                       NULL, "%s%u", driverData->deviceName, n);
+		if (IS_ERR(device)) {
+			DEBUGPRINT(1, ("device_create() error = %ld\n", PTR_ERR(device)));
+			goto device_create_err;
+		}
 	}
 
 	kv_do_gettimeofday(&driverData->startTime);
 
 	return 0;
+
+device_create_err:
+	if (n > 0) {
+		while (--n >= 0) {
+			device_destroy(driverData->class, MKDEV(MAJOR(devno), n));
+		}
+	}
+	cdev_del(&driverData->cdev);
+cdev_add_err:
+	class_destroy(driverData->class);
+class_create_err:
+	unregister_chrdev_region(devno, max_channels);
+alloc_chrdev_err:
+	remove_proc_entry(driverData->deviceName, NULL /* parent dir */);
+proc_create_err:
+	hwIf->closeAllDevices();
+initAllDevices_err:
+	kfree(driverData->cardNumbers);
+cardNumbers_alloc_err:
+
+	return -1;
 }
 EXPORT_SYMBOL(vCanInit);
 
@@ -3425,11 +3456,21 @@ EXPORT_SYMBOL(vCanInit);
 //======================================================================
 void vCanCleanup(VCanDriverData* driverData)
 {
+	unsigned n;
+
 	if (driverData->cdev.dev > 0) {
 		DEBUGPRINT(2, ("unregister chrdev_region (%s) major=%d count=%d\n",
 		               driverData->deviceName, MAJOR(driverData->cdev.dev),
 		               driverData->cdev.count));
+		n = driverData->cdev.count;
+		if (n > 0) {
+			while (--n >= 0) {
+				device_destroy(driverData->class,
+				               MKDEV(MAJOR(driverData->cdev.dev), n));
+			}
+		}
 		cdev_del(&driverData->cdev);
+		class_destroy(driverData->class);
 		unregister_chrdev_region(driverData->cdev.dev, driverData->cdev.count);
 	}
 	remove_proc_entry(driverData->deviceName, NULL /* parent dir */);

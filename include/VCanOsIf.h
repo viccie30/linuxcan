@@ -287,6 +287,7 @@ typedef struct VCanDriverData {
 	struct VCanHWInterface* hwIf;
 	struct VCanCardData* canCards;
 	spinlock_t canCardsLock;
+	struct class* class;
 	struct cdev cdev;
 	struct VCanCardNumberData* cardNumbers;
 	unsigned int maxCardnumber;
