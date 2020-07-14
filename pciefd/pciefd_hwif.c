@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -88,18 +90,18 @@
 #include <linux/seq_file.h>
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 29))
-#error Linux kernel version 2.6.29 or later required for kvpciefd!
+#	error Linux kernel version 2.6.29 or later required for kvpciefd!
 #endif /* KERNEL_VERSION < 2.6.29 */
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 4, 0)
-#   include <asm/system.h>
+#	include <asm/system.h>
 #endif /* KERNEL_VERSION < 3.4.0 */
 
 #include <asm/bitops.h>
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 12, 0))
-#include <asm/uaccess.h>
+#	include <asm/uaccess.h>
 #else
-#include <linux/uaccess.h>
+#	include <linux/uaccess.h>
 #endif /* KERNEL_VERSION < 4.12.0 */
 
 #include <asm/delay.h>
@@ -118,15 +120,14 @@
 
 #include "hwnames.h"
 
-
 // Force 32-bit DMA addresses
 #ifdef KV_PCIEFD_DMA_32BIT
-#undef KV_PCIEFD_DMA_64BIT
+#	undef KV_PCIEFD_DMA_64BIT
 #else
-#ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
-#define KV_PCIEFD_DMA_64BIT 1
-#endif /* CONFIG_ARCH_DMA_ADDR_T_64BIT */
-#endif /* KV_PCIEFD_DMA_32BIT */
+#	ifdef CONFIG_ARCH_DMA_ADDR_T_64BIT
+#		define KV_PCIEFD_DMA_64BIT 1
+#	endif /* CONFIG_ARCH_DMA_ADDR_T_64BIT */
+#endif     /* KV_PCIEFD_DMA_32BIT */
 
 #ifdef PCIEFD_DEBUG
 //
@@ -139,22 +140,27 @@
 int debug_level = PCIEFD_DEBUG;
 MODULE_PARM_DESC(debug_level, "PCIe CAN debug level");
 module_param(debug_level, int, 0644);
-#define DEBUGPRINT(n, arg...)     if (debug_level >= (n)) { DEBUGOUT(n, (arg)); }
-#define INITPRINT(arg...) printk(arg)
+#	define DEBUGPRINT(n, arg...)                                              \
+		if (debug_level >= (n)) {                                              \
+			DEBUGOUT(n, (arg));                                                \
+		}
+#	define INITPRINT(arg...) printk(arg)
 
 #else
 
-#define DEBUGPRINT(n, arg...)     if ((n) == 1) { DEBUGOUT(n, (arg)); }
-#define INITPRINT(arg...)
+#	define DEBUGPRINT(n, arg...)                                              \
+		if ((n) == 1) {                                                        \
+			DEBUGOUT(n, (arg));                                                \
+		}
+#	define INITPRINT(arg...)
 
 #endif /* PCIEFD_DEBUG */
-
 
 // For measuring delays during debugging
 #include <linux/time.h>
 
 #if USE_DMA
-#include <linux/dma-mapping.h>
+#	include <linux/dma-mapping.h>
 #endif
 
 MODULE_LICENSE("Dual BSD/GPL");
@@ -162,139 +168,130 @@ MODULE_AUTHOR("KVASER");
 MODULE_DESCRIPTION("PCIe CAN module.");
 
 #define PCIEFD_VENDOR (0x1a07)
-#define PCIEFD_4HS_ID     (0x000d)
-#define PCIEFD_2HS_ID     (0x000e)
-#define PCIEFD_HS_ID      (0x000f)
-#define MINIPCIEFD_HS_ID  (0x0010)
+#define PCIEFD_4HS_ID (0x000d)
+#define PCIEFD_2HS_ID (0x000e)
+#define PCIEFD_HS_ID (0x000f)
+#define MINIPCIEFD_HS_ID (0x0010)
 #define MINIPCIEFD_2HS_ID (0x0011)
 
-#define MAX_NB_PARAMETERS   256
-#define PARAM_MAGIC         0xCAFEF00D
-#define PARAMETER_MAX_SIZE  (24)
+#define MAX_NB_PARAMETERS 256
+#define PARAM_MAGIC 0xCAFEF00D
+#define PARAMETER_MAX_SIZE (24)
 
 #define PARAM_SYSTEM_VERSION 1
 
-#define PARAM_USER_FIRST                (1)
-#define CHANNEL_NAME_NBR_OF_PARAMS      (1)
-#define CHANNEL_NAME_PARAM_INDEX_FIRST  (PARAM_USER_FIRST + 1)
+#define PARAM_USER_FIRST (1)
+#define CHANNEL_NAME_NBR_OF_PARAMS (1)
+#define CHANNEL_NAME_PARAM_INDEX_FIRST (PARAM_USER_FIRST + 1)
 
-#define CANFD_MAX_PRESCALER_VALUE   2U
+#define CANFD_MAX_PRESCALER_VALUE 2U
 
 //======================================================================
 // HW function pointers
 //======================================================================
 
 static int pciCanInitAllDevices(void);
-static int pciCanSetBusParams (VCanChanData *vChd, VCanBusParams *par);
-static int pciCanGetBusParams (VCanChanData *vChd, VCanBusParams *par);
-static int pciCanSetOutputMode (VCanChanData *vChd, int silent);
-static int pciCanGetOutputMode (VCanChanData *vChd, int *silent);
-static int pciCanSetTranceiverMode (VCanChanData *vChd, int linemode, int resnet);
-static int pciCanReqBusStats (VCanChanData *vChan);
-static int pciCanBusOn (VCanChanData *vChd);
-static int pciCanBusOff(VCanChanData *vChd);
-static int pciCanGetTxErr(VCanChanData *vChd);
-static int pciCanGetRxErr(VCanChanData *vChd);
-static int pciCanInSync (VCanChanData *vChd);
-static int pciCanTxAvailable (VCanChanData *vChd);
+static int pciCanSetBusParams(VCanChanData* vChd, VCanBusParams* par);
+static int pciCanGetBusParams(VCanChanData* vChd, VCanBusParams* par);
+static int pciCanSetOutputMode(VCanChanData* vChd, int silent);
+static int pciCanGetOutputMode(VCanChanData* vChd, int* silent);
+static int pciCanSetTranceiverMode(VCanChanData* vChd, int linemode,
+                                   int resnet);
+static int pciCanReqBusStats(VCanChanData* vChan);
+static int pciCanBusOn(VCanChanData* vChd);
+static int pciCanBusOff(VCanChanData* vChd);
+static int pciCanGetTxErr(VCanChanData* vChd);
+static int pciCanGetRxErr(VCanChanData* vChd);
+static int pciCanInSync(VCanChanData* vChd);
+static int pciCanTxAvailable(VCanChanData* vChd);
 static int pciCanCloseAllDevices(void);
-static int pciCanTime(VCanCardData *vCard, uint64_t *time);
-static int pciCanFlushSendBuffer (VCanChanData *vChd);
-static int pciCanProcRead (struct seq_file* m, void* v);
+static int pciCanTime(VCanCardData* vCard, uint64_t* time);
+static int pciCanFlushSendBuffer(VCanChanData* vChd);
+static int pciCanProcRead(struct seq_file* m, void* v);
 
-static int pciCanRequestChipState (VCanChanData *vChd);
-static unsigned long pciCanTxQLen(VCanChanData *vChd);
-static void pciCanRequestSend (VCanCardData *vCard, VCanChanData *vChd);
-static int pciCanGetCustChannelName(const VCanChanData * const vChd,
-                                    unsigned char * const data,
+static int pciCanRequestChipState(VCanChanData* vChd);
+static unsigned long pciCanTxQLen(VCanChanData* vChd);
+static void pciCanRequestSend(VCanCardData* vCard, VCanChanData* vChd);
+static int pciCanGetCustChannelName(const VCanChanData* const vChd,
+                                    unsigned char* const data,
                                     const unsigned int data_size,
-                                    unsigned int * const status);
+                                    unsigned int* const status);
 
 static VCanDriverData driverData;
 
 static VCanHWInterface hwIf = {
-  .initAllDevices     = pciCanInitAllDevices,
-  .setBusParams       = pciCanSetBusParams,
-  .getBusParams       = pciCanGetBusParams,
-  .setOutputMode      = pciCanSetOutputMode,
-  .getOutputMode      = pciCanGetOutputMode,
-  .setTranceiverMode  = pciCanSetTranceiverMode,
-  .busOn              = pciCanBusOn,
-  .busOff             = pciCanBusOff,
-  .txAvailable        = pciCanInSync,
-  .procRead           = pciCanProcRead,
-  .closeAllDevices    = pciCanCloseAllDevices,
-  .getTime            = pciCanTime,
-  .flushSendBuffer    = pciCanFlushSendBuffer,
-  .getTxErr           = pciCanGetTxErr,
-  .getRxErr           = pciCanGetRxErr,
-  .txQLen             = pciCanTxQLen,
-  .requestChipState   = pciCanRequestChipState,
-  .requestSend        = pciCanRequestSend,
-  .getCustChannelName = pciCanGetCustChannelName,
-  .getCardInfo        = vCanGetCardInfo,
-  .getCardInfo2       = vCanGetCardInfo2,
-  .reqBusStats        = pciCanReqBusStats,
+        .initAllDevices = pciCanInitAllDevices,
+        .setBusParams = pciCanSetBusParams,
+        .getBusParams = pciCanGetBusParams,
+        .setOutputMode = pciCanSetOutputMode,
+        .getOutputMode = pciCanGetOutputMode,
+        .setTranceiverMode = pciCanSetTranceiverMode,
+        .busOn = pciCanBusOn,
+        .busOff = pciCanBusOff,
+        .txAvailable = pciCanInSync,
+        .procRead = pciCanProcRead,
+        .closeAllDevices = pciCanCloseAllDevices,
+        .getTime = pciCanTime,
+        .flushSendBuffer = pciCanFlushSendBuffer,
+        .getTxErr = pciCanGetTxErr,
+        .getRxErr = pciCanGetRxErr,
+        .txQLen = pciCanTxQLen,
+        .requestChipState = pciCanRequestChipState,
+        .requestSend = pciCanRequestSend,
+        .getCustChannelName = pciCanGetCustChannelName,
+        .getCardInfo = vCanGetCardInfo,
+        .getCardInfo2 = vCanGetCardInfo2,
+        .reqBusStats = pciCanReqBusStats,
 };
 
-
-static int pciCanInitOne(struct pci_dev *dev, const struct pci_device_id *id);
-static void pciCanRemoveOne(struct pci_dev *dev);
+static int pciCanInitOne(struct pci_dev* dev, const struct pci_device_id* id);
+static void pciCanRemoveOne(struct pci_dev* dev);
 
 static struct pci_device_id id_table[] = {
-  {
-    .vendor    = PCIEFD_VENDOR,
-    .device    = PCIEFD_4HS_ID,
-    .subvendor = PCI_ANY_ID,
-    .subdevice = PCI_ANY_ID
-  },
-  {
-    .vendor    = PCIEFD_VENDOR,
-    .device    = PCIEFD_2HS_ID,
-    .subvendor = PCI_ANY_ID,
-    .subdevice = PCI_ANY_ID
-  },
-  {
-    .vendor    = PCIEFD_VENDOR,
-    .device    = PCIEFD_HS_ID,
-    .subvendor = PCI_ANY_ID,
-    .subdevice = PCI_ANY_ID
-  },
-  {
-    .vendor    = PCIEFD_VENDOR,
-    .device    = MINIPCIEFD_HS_ID,
-    .subvendor = PCI_ANY_ID,
-    .subdevice = PCI_ANY_ID
-  },
-  {
-    .vendor    = PCIEFD_VENDOR,
-    .device    = MINIPCIEFD_2HS_ID,
-    .subvendor = PCI_ANY_ID,
-    .subdevice = PCI_ANY_ID
-  },
-  {0,},
+        {.vendor = PCIEFD_VENDOR,
+         .device = PCIEFD_4HS_ID,
+         .subvendor = PCI_ANY_ID,
+         .subdevice = PCI_ANY_ID},
+        {.vendor = PCIEFD_VENDOR,
+         .device = PCIEFD_2HS_ID,
+         .subvendor = PCI_ANY_ID,
+         .subdevice = PCI_ANY_ID},
+        {.vendor = PCIEFD_VENDOR,
+         .device = PCIEFD_HS_ID,
+         .subvendor = PCI_ANY_ID,
+         .subdevice = PCI_ANY_ID},
+        {.vendor = PCIEFD_VENDOR,
+         .device = MINIPCIEFD_HS_ID,
+         .subvendor = PCI_ANY_ID,
+         .subdevice = PCI_ANY_ID},
+        {.vendor = PCIEFD_VENDOR,
+         .device = MINIPCIEFD_2HS_ID,
+         .subvendor = PCI_ANY_ID,
+         .subdevice = PCI_ANY_ID},
+        {
+                0,
+        },
 };
 
 static struct pci_driver pcican_tbl = {
-  .name     = "kvpciefd",
-  .id_table = id_table,
-  .probe    = pciCanInitOne,
-  .remove   = pciCanRemoveOne,
+        .name = "kvpciefd",
+        .id_table = id_table,
+        .probe = pciCanInitOne,
+        .remove = pciCanRemoveOne,
 };
 
-
 typedef struct {
-  uint32_t   magic;  //PARAM_MAGIC indicate used
-  uint32_t   param_number;
-  uint32_t   param_len;
-  uint8_t    data[PARAMETER_MAX_SIZE];
+	uint32_t magic; // PARAM_MAGIC indicate used
+	uint32_t param_number;
+	uint32_t param_len;
+	uint8_t data[PARAMETER_MAX_SIZE];
 } kcc_param_t;
 
 typedef struct {
-  uint32_t version;
-  uint32_t magic;
-  uint32_t crc;
-  kcc_param_t param[MAX_NB_PARAMETERS];
+	uint32_t version;
+	uint32_t magic;
+	uint32_t crc;
+	kcc_param_t param[MAX_NB_PARAMETERS];
 } kcc_param_image_t;
 
 typedef unsigned char cust_channel_name_t[PARAMETER_MAX_SIZE];
@@ -308,554 +305,550 @@ static cust_channel_name_t cust_channel_name[MAX_CARD_CHANNELS];
 //======================================================================
 //
 //======================================================================
-static int dmaInit(VCanCardData *vCard)
+static int dmaInit(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  struct device *dev = &hCard->dev->dev;
+	PciCanCardData* hCard = vCard->hwCardData;
+	struct device* dev = &hCard->dev->dev;
 
-#ifdef KV_PCIEFD_DMA_64BIT
-  if (!dma_set_mask(dev, DMA_BIT_MASK(64))) {
-    hCard->useDmaAddr64 = 1;
-    DEBUGPRINT(3,"Use 64-bit dma address mask\n");
-  } else
-#endif
-  if (!dma_set_mask(dev, DMA_BIT_MASK(32))) {
-    hCard->useDmaAddr64 = 0;
-    DEBUGPRINT(3,"Use 32-bit dma address mask\n");
-  } else {
-    DEBUGPRINT(1, "No suitable DMA available.\n");
-    return VCAN_STAT_NO_RESOURCES;
-  }
+#	ifdef KV_PCIEFD_DMA_64BIT
+	if (!dma_set_mask(dev, DMA_BIT_MASK(64))) {
+		hCard->useDmaAddr64 = 1;
+		DEBUGPRINT(3, "Use 64-bit dma address mask\n");
+	}
+	else
+#	endif
+	        if (!dma_set_mask(dev, DMA_BIT_MASK(32))) {
+		hCard->useDmaAddr64 = 0;
+		DEBUGPRINT(3, "Use 32-bit dma address mask\n");
+	}
+	else {
+		DEBUGPRINT(1, "No suitable DMA available.\n");
+		return VCAN_STAT_NO_RESOURCES;
+	}
 
-  return VCAN_STAT_OK;
-}
-
-
-//======================================================================
-//
-//======================================================================
-static int mapOneBuffer(VCanCardData * vCard, dmaCtxBuffer_t * bufferCtx)
-{
-  PciCanCardData *hCard = vCard->hwCardData;
-  struct device *dev = &hCard->dev->dev;
-
-  void *buffer;
-  dma_addr_t dma_handle;
-
-  buffer = kmalloc(DMA_BUFFER_SZ, GFP_KERNEL);
-
-  if(!buffer){
-    DEBUGPRINT(1,"Failed DMA buffer setup\n");
-    return VCAN_STAT_NO_MEMORY;
-  }
-
-  bufferCtx->data = buffer;
-
-  dma_handle = dma_map_single(dev, buffer, DMA_BUFFER_SZ, DMA_FROM_DEVICE);
-
-  if (dma_mapping_error(dev,dma_handle)) {
-    /*
-     * reduce current DMA mapping usage,
-     * delay and try again later or
-     * reset driver.
-     */
-    DEBUGPRINT(1,"Failed DMA mapping\n");
-    return VCAN_STAT_FAIL;
-  }
-
-  bufferCtx->address = dma_handle;
-
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 }
 
 //======================================================================
 //
 //======================================================================
-static int setupBusMasterTranslationTable(VCanCardData * vCard, int pos, dmaCtxBuffer_t * bufferCtx)
+static int mapOneBuffer(VCanCardData* vCard, dmaCtxBuffer_t* bufferCtx)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
+	PciCanCardData* hCard = vCard->hwCardData;
+	struct device* dev = &hCard->dev->dev;
 
-  // Every table entry is 64 bits, two table entries are used for each channel.
-  unsigned int tabEntryOffset = 0x1000+pos*8;
+	void* buffer;
+	dma_addr_t dma_handle;
 
-#ifdef KV_PCIEFD_DMA_64BIT
-  DEBUGPRINT(3,"KV_PCIEFD_DMA_64BIT\n");
+	buffer = kmalloc(DMA_BUFFER_SZ, GFP_KERNEL);
 
-  if(hCard->useDmaAddr64)
-    {
-      DEBUGPRINT(3,"useDmaAddr64\n");
+	if (!buffer) {
+		DEBUGPRINT(1, "Failed DMA buffer setup\n");
+		return VCAN_STAT_NO_MEMORY;
+	}
 
-      iowrite32( (uint32_t)(bufferCtx->address | AV_ATT_ASBE_MS64),
-                 OFFSET_FROM_BASE(hCard->pcieBar0Base, tabEntryOffset) );
+	bufferCtx->data = buffer;
 
-      iowrite32( (uint32_t)(bufferCtx->address >> 32),
-                 OFFSET_FROM_BASE(hCard->pcieBar0Base, tabEntryOffset+4) );
-    }
-  else
-    {
-#endif
-      iowrite32( (uint32_t)(bufferCtx->address | AV_ATT_ASBE_MS32),
-                 OFFSET_FROM_BASE(hCard->pcieBar0Base, tabEntryOffset) );
-      iowrite32(0, OFFSET_FROM_BASE(hCard->pcieBar0Base, tabEntryOffset+4) );
+	dma_handle = dma_map_single(dev, buffer, DMA_BUFFER_SZ, DMA_FROM_DEVICE);
 
-#ifdef KV_PCIEFD_DMA_64BIT
-    }
-#endif
+	if (dma_mapping_error(dev, dma_handle)) {
+		/*
+		 * reduce current DMA mapping usage,
+		 * delay and try again later or
+		 * reset driver.
+		 */
+		DEBUGPRINT(1, "Failed DMA mapping\n");
+		return VCAN_STAT_FAIL;
+	}
 
-  return VCAN_STAT_OK;
+	bufferCtx->address = dma_handle;
+
+	return VCAN_STAT_OK;
 }
 
 //======================================================================
 //
 //======================================================================
-static int setupDmaMappings(VCanCardData * vCard )
+static int setupBusMasterTranslationTable(VCanCardData* vCard, int pos,
+                                          dmaCtxBuffer_t* bufferCtx)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  int i;
+	PciCanCardData* hCard = vCard->hwCardData;
 
-  for(i=0; i<2; i++)
-  {
-    int retval;
+	// Every table entry is 64 bits, two table entries are used for each
+	// channel.
+	unsigned int tabEntryOffset = 0x1000 + pos * 8;
 
-    retval = mapOneBuffer(vCard, &(hCard->dmaCtx.bufferCtx[i]));
+#	ifdef KV_PCIEFD_DMA_64BIT
+	DEBUGPRINT(3, "KV_PCIEFD_DMA_64BIT\n");
 
-    if( retval != VCAN_STAT_OK )
-      return retval;
+	if (hCard->useDmaAddr64) {
+		DEBUGPRINT(3, "useDmaAddr64\n");
 
-    DEBUGPRINT(3,"CAN Receiver DMA Buffer %u Addr:%p : Handle:%x\n",i,
-               hCard->dmaCtx.bufferCtx[i].data,
-               (unsigned int)hCard->dmaCtx.bufferCtx[i].address);
+		iowrite32((uint32_t)(bufferCtx->address | AV_ATT_ASBE_MS64),
+		          OFFSET_FROM_BASE(hCard->pcieBar0Base, tabEntryOffset));
 
-    setupBusMasterTranslationTable(vCard, i, &(hCard->dmaCtx.bufferCtx[i]));
-  }
+		iowrite32((uint32_t)(bufferCtx->address >> 32),
+		          OFFSET_FROM_BASE(hCard->pcieBar0Base, tabEntryOffset + 4));
+	}
+	else {
+#	endif
+		iowrite32((uint32_t)(bufferCtx->address | AV_ATT_ASBE_MS32),
+		          OFFSET_FROM_BASE(hCard->pcieBar0Base, tabEntryOffset));
+		iowrite32(0, OFFSET_FROM_BASE(hCard->pcieBar0Base, tabEntryOffset + 4));
 
+#	ifdef KV_PCIEFD_DMA_64BIT
+	}
+#	endif
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 }
 
 //======================================================================
 //
 //======================================================================
-static int removeOneBuffer(VCanCardData * vCard, dmaCtxBuffer_t * bufferCtx)
+static int setupDmaMappings(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  struct device *dev = &hCard->dev->dev;
+	PciCanCardData* hCard = vCard->hwCardData;
+	int i;
 
-  if(bufferCtx->address)
-    {
-      dma_unmap_single(dev, bufferCtx->address, DMA_BUFFER_SZ, DMA_FROM_DEVICE);
-      bufferCtx->address = 0;
-    }
-  else
-    {
-      DEBUGPRINT(3, "dmaCtx.address was not initialized\n");
-    }
+	for (i = 0; i < 2; i++) {
+		int retval;
 
-  if(bufferCtx->data)
-    {
-      kfree(bufferCtx->data);
-      bufferCtx->data = 0;
-    }
-  else
-    {
-      DEBUGPRINT(3, "dmaCtx.buffer was not initialized\n");
-    }
+		retval = mapOneBuffer(vCard, &(hCard->dmaCtx.bufferCtx[i]));
 
-  return VCAN_STAT_OK;
+		if (retval != VCAN_STAT_OK)
+			return retval;
+
+		DEBUGPRINT(3, "CAN Receiver DMA Buffer %u Addr:%p : Handle:%x\n", i,
+		           hCard->dmaCtx.bufferCtx[i].data,
+		           (unsigned int) hCard->dmaCtx.bufferCtx[i].address);
+
+		setupBusMasterTranslationTable(vCard, i, &(hCard->dmaCtx.bufferCtx[i]));
+	}
+
+	return VCAN_STAT_OK;
 }
 
 //======================================================================
 //
 //======================================================================
-static int removeDmaMappings(VCanCardData * vCard)
+static int removeOneBuffer(VCanCardData* vCard, dmaCtxBuffer_t* bufferCtx)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  int i;
+	PciCanCardData* hCard = vCard->hwCardData;
+	struct device* dev = &hCard->dev->dev;
 
-  for(i=0; i<2; i++)
-    {
-      DEBUGPRINT(3,"removeDmaMappings buffer:%u\n",i);
+	if (bufferCtx->address) {
+		dma_unmap_single(dev, bufferCtx->address, DMA_BUFFER_SZ,
+		                 DMA_FROM_DEVICE);
+		bufferCtx->address = 0;
+	}
+	else {
+		DEBUGPRINT(3, "dmaCtx.address was not initialized\n");
+	}
 
-      removeOneBuffer(vCard, &(hCard->dmaCtx.bufferCtx[i]));
-    }
+	if (bufferCtx->data) {
+		kfree(bufferCtx->data);
+		bufferCtx->data = 0;
+	}
+	else {
+		DEBUGPRINT(3, "dmaCtx.buffer was not initialized\n");
+	}
 
-
-  return 0;
+	return VCAN_STAT_OK;
 }
 
 //======================================================================
 //
 //======================================================================
-static void aquireDmaBuffer(VCanCardData *vCard, int id)
+static int removeDmaMappings(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  struct device *dev = &hCard->dev->dev;
-  dmaCtx_t *dmaCtx = &hCard->dmaCtx;
+	PciCanCardData* hCard = vCard->hwCardData;
+	int i;
 
-  if(dmaCtx->active >= 0)
-    {
-      DEBUGPRINT(3,"DMA handling error\n");
-    }
+	for (i = 0; i < 2; i++) {
+		DEBUGPRINT(3, "removeDmaMappings buffer:%u\n", i);
 
-  dma_sync_single_for_cpu(dev, dmaCtx->bufferCtx[id].address, DMA_BUFFER_SZ, DMA_FROM_DEVICE);
+		removeOneBuffer(vCard, &(hCard->dmaCtx.bufferCtx[i]));
+	}
 
-  dmaCtx->active = id;
-  dmaCtx->position = 0;
+	return 0;
 }
 
 //======================================================================
 //
 //======================================================================
-static void releaseDmaBuffer(VCanCardData *vCard, int id)
+static void aquireDmaBuffer(VCanCardData* vCard, int id)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  struct device *dev = &hCard->dev->dev;
-  dmaCtx_t *dmaCtx = &hCard->dmaCtx;
+	PciCanCardData* hCard = vCard->hwCardData;
+	struct device* dev = &hCard->dev->dev;
+	dmaCtx_t* dmaCtx = &hCard->dmaCtx;
 
-  dma_sync_single_for_device(dev, dmaCtx->bufferCtx[id].address, DMA_BUFFER_SZ, DMA_FROM_DEVICE);
+	if (dmaCtx->active >= 0) {
+		DEBUGPRINT(3, "DMA handling error\n");
+	}
+
+	dma_sync_single_for_cpu(dev, dmaCtx->bufferCtx[id].address, DMA_BUFFER_SZ,
+	                        DMA_FROM_DEVICE);
+
+	dmaCtx->active = id;
+	dmaCtx->position = 0;
 }
 
 //======================================================================
 //
 //======================================================================
-static int startDMA(VCanCardData *vCard)
+static void releaseDmaBuffer(VCanCardData* vCard, int id)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  uint32_t tmp;
-  uint32_t dmaInterrupts = RXBUF_IRQ_DMA_DONE0_MSK | RXBUF_IRQ_DMA_DONE1_MSK
-    | RXBUF_IRQ_DMA_OVF0_MSK | RXBUF_IRQ_DMA_OVF1_MSK;
+	PciCanCardData* hCard = vCard->hwCardData;
+	struct device* dev = &hCard->dev->dev;
+	dmaCtx_t* dmaCtx = &hCard->dmaCtx;
 
-  DEBUGPRINT(3,"startDMA\n");
-
-  IOWR_RXBUF_IRQ( hCard->canRxBuffer, dmaInterrupts);
-
-  tmp = IORD_RXBUF_IEN(hCard->canRxBuffer);
-  IOWR_RXBUF_IEN( hCard->canRxBuffer, tmp | dmaInterrupts);
-
-  hCard->dmaCtx.active = -1;
-
-  armDMA0(hCard->canRxBuffer);
-  armDMA1(hCard->canRxBuffer);
-
-  if(!dmaIdle(hCard->canRxBuffer)) {
-    DEBUGPRINT(3,"DMA is not idle before start\n");
-  }
-
-  enableDMA(hCard->canRxBuffer);
-
-  hCard->dmaCtx.enabled=1;
-
-  return 0;
+	dma_sync_single_for_device(dev, dmaCtx->bufferCtx[id].address,
+	                           DMA_BUFFER_SZ, DMA_FROM_DEVICE);
 }
 
 //======================================================================
 //
 //======================================================================
-static int stopDMA(VCanCardData *vCard)
+static int startDMA(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  uint32_t tmp;
-  uint32_t dmaInterrupts = RXBUF_IRQ_DMA_DONE0_MSK | RXBUF_IRQ_DMA_DONE1_MSK
-    | RXBUF_IRQ_DMA_OVF0_MSK | RXBUF_IRQ_DMA_OVF1_MSK;
+	PciCanCardData* hCard = vCard->hwCardData;
+	uint32_t tmp;
+	uint32_t dmaInterrupts = RXBUF_IRQ_DMA_DONE0_MSK | RXBUF_IRQ_DMA_DONE1_MSK |
+	                         RXBUF_IRQ_DMA_OVF0_MSK | RXBUF_IRQ_DMA_OVF1_MSK;
 
-  DEBUGPRINT(3,"stopDMA\n");
+	DEBUGPRINT(3, "startDMA\n");
 
-  disableDMA(hCard->canRxBuffer);
-  if(!dmaIdle(hCard->canRxBuffer)) {
-    DEBUGPRINT(3,"Warning: Has not yet disabled DMA\n");
-  }
+	IOWR_RXBUF_IRQ(hCard->canRxBuffer, dmaInterrupts);
 
-  tmp = IORD_RXBUF_IEN(hCard->canRxBuffer);
-  // Disable interrupts
-  IOWR_RXBUF_IEN(hCard->canRxBuffer, tmp & ~dmaInterrupts);
-  // Clear pending interrupts
-  IOWR_RXBUF_IRQ(hCard->canRxBuffer, dmaInterrupts);
+	tmp = IORD_RXBUF_IEN(hCard->canRxBuffer);
+	IOWR_RXBUF_IEN(hCard->canRxBuffer, tmp | dmaInterrupts);
 
-  hCard->dmaCtx.active = -1;
-  hCard->dmaCtx.enabled=0;
+	hCard->dmaCtx.active = -1;
 
-  return 0;
+	armDMA0(hCard->canRxBuffer);
+	armDMA1(hCard->canRxBuffer);
+
+	if (!dmaIdle(hCard->canRxBuffer)) {
+		DEBUGPRINT(3, "DMA is not idle before start\n");
+	}
+
+	enableDMA(hCard->canRxBuffer);
+
+	hCard->dmaCtx.enabled = 1;
+
+	return 0;
 }
 
 //======================================================================
 //
 //======================================================================
-static int getDmaWord(VCanCardData *vCard, uint32_t *data)
+static int stopDMA(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  dmaCtx_t *dmaCtx = &hCard->dmaCtx;
-  uint32_t *buffer;
+	PciCanCardData* hCard = vCard->hwCardData;
+	uint32_t tmp;
+	uint32_t dmaInterrupts = RXBUF_IRQ_DMA_DONE0_MSK | RXBUF_IRQ_DMA_DONE1_MSK |
+	                         RXBUF_IRQ_DMA_OVF0_MSK | RXBUF_IRQ_DMA_OVF1_MSK;
 
-  // Sanity check used during development
-  if( (dmaCtx->active < 0) || (dmaCtx->active > 1) )
-    {
-      DEBUGPRINT(1,"Error: Invalid buffer\n");
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+	DEBUGPRINT(3, "stopDMA\n");
 
-  buffer = dmaCtx->bufferCtx[dmaCtx->active].data;
+	disableDMA(hCard->canRxBuffer);
+	if (!dmaIdle(hCard->canRxBuffer)) {
+		DEBUGPRINT(3, "Warning: Has not yet disabled DMA\n");
+	}
 
-  if(!buffer)
-    {
-      DEBUGPRINT(1,"Error: DMA buffer uninitialized\n");
-      return VCAN_STAT_NO_DEVICE;
-    }
+	tmp = IORD_RXBUF_IEN(hCard->canRxBuffer);
+	// Disable interrupts
+	IOWR_RXBUF_IEN(hCard->canRxBuffer, tmp & ~dmaInterrupts);
+	// Clear pending interrupts
+	IOWR_RXBUF_IRQ(hCard->canRxBuffer, dmaInterrupts);
 
-  if(dmaCtx->position >= DMA_BUFFER_SZ/4)
-    {
-      DEBUGPRINT(1,"Error: DMA buffer pointer wraparound\n");
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+	hCard->dmaCtx.active = -1;
+	hCard->dmaCtx.enabled = 0;
 
-  --dmaCtx->psize; // Decrement before assigning data (data could be a pointer to psize!)
-
-  *data = buffer[dmaCtx->position];
-
-  ++dmaCtx->position;
-
-  return VCAN_STAT_OK;
+	return 0;
 }
 
 //======================================================================
 //
 //======================================================================
-static int getDmaPacketSize(VCanCardData *vCard)
+static int getDmaWord(VCanCardData* vCard, uint32_t* data)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  dmaCtx_t *dmaCtx = &hCard->dmaCtx;
-  int status;
-  uint32_t tmp;
+	PciCanCardData* hCard = vCard->hwCardData;
+	dmaCtx_t* dmaCtx = &hCard->dmaCtx;
+	uint32_t* buffer;
 
-  status = getDmaWord(vCard, &tmp);
+	// Sanity check used during development
+	if ((dmaCtx->active < 0) || (dmaCtx->active > 1)) {
+		DEBUGPRINT(1, "Error: Invalid buffer\n");
+		return VCAN_STAT_BAD_PARAMETER;
+	}
 
-  if( status ) {
-    DEBUGPRINT(1, "Error: Failed to get packet size\n");
-    dmaCtx->active = -1;
-    return status;
-  }
+	buffer = dmaCtx->bufferCtx[dmaCtx->active].data;
 
-  dmaCtx->psize = (unsigned int)tmp;
+	if (!buffer) {
+		DEBUGPRINT(1, "Error: DMA buffer uninitialized\n");
+		return VCAN_STAT_NO_DEVICE;
+	}
 
-  if(dmaCtx->psize > 21) {
-    DEBUGPRINT(1,"Error: Buffer corruption detected psize:%u pos:%u\n",
-               dmaCtx->psize,dmaCtx->position);
+	if (dmaCtx->position >= DMA_BUFFER_SZ / 4) {
+		DEBUGPRINT(1, "Error: DMA buffer pointer wraparound\n");
+		return VCAN_STAT_BAD_PARAMETER;
+	}
 
-    dmaCtx->active = -1;
+	--dmaCtx->psize; // Decrement before assigning data (data could be a pointer
+	                 // to psize!)
 
-    return VCAN_STAT_FAIL;
-  }
+	*data = buffer[dmaCtx->position];
 
-  if( !dmaCtx->psize )
-    {
-      // End of buffer reached
-      dmaCtx->active = -1;
-    }
-  else
-    {
-      --dmaCtx->psize;
-    }
+	++dmaCtx->position;
 
-  return dmaCtx->psize;
+	return VCAN_STAT_OK;
 }
 
 //======================================================================
 //
 //======================================================================
-static int getDmaPacketTS(VCanCardData *vCard, pciefd_packet_t *packet)
+static int getDmaPacketSize(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  dmaCtx_t *dmaCtx = &hCard->dmaCtx;
-  int status;
-  uint32_t *timestamp = (uint32_t*)&packet->timestamp;
+	PciCanCardData* hCard = vCard->hwCardData;
+	dmaCtx_t* dmaCtx = &hCard->dmaCtx;
+	int status;
+	uint32_t tmp;
 
-  status = getDmaWord(vCard, &timestamp[0]);
+	status = getDmaWord(vCard, &tmp);
 
-  if( status ) return status;
+	if (status) {
+		DEBUGPRINT(1, "Error: Failed to get packet size\n");
+		dmaCtx->active = -1;
+		return status;
+	}
 
-  if( !dmaCtx->psize ) DEBUGPRINT(1,"Error: Packet unaligned\n");
+	dmaCtx->psize = (unsigned int) tmp;
 
-  status = getDmaWord(vCard, &timestamp[1]);
+	if (dmaCtx->psize > 21) {
+		DEBUGPRINT(1, "Error: Buffer corruption detected psize:%u pos:%u\n",
+		           dmaCtx->psize, dmaCtx->position);
 
-  if( status ) return status;
+		dmaCtx->active = -1;
 
-  return VCAN_STAT_OK;
+		return VCAN_STAT_FAIL;
+	}
+
+	if (!dmaCtx->psize) {
+		// End of buffer reached
+		dmaCtx->active = -1;
+	}
+	else {
+		--dmaCtx->psize;
+	}
+
+	return dmaCtx->psize;
 }
 
 //======================================================================
 //
 //======================================================================
-int readDMA(VCanCardData * vCard, pciefd_packet_t *packet)
+static int getDmaPacketTS(VCanCardData* vCard, pciefd_packet_t* packet)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  dmaCtx_t *dmaCtx = &hCard->dmaCtx;
-  int status;
-  int channel;
+	PciCanCardData* hCard = vCard->hwCardData;
+	dmaCtx_t* dmaCtx = &hCard->dmaCtx;
+	int status;
+	uint32_t* timestamp = (uint32_t*) &packet->timestamp;
 
-  if(dmaCtx->active < 0)
-    {
-      DEBUGPRINT(1,"Error: Invalid buffer\n");
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+	status = getDmaWord(vCard, &timestamp[0]);
 
-  if(!dmaCtx->bufferCtx[dmaCtx->active].address)
-    {
-      DEBUGPRINT(1,"Warning: DMA Buffer %u Not Setup\n",dmaCtx->active);
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+	if (status)
+		return status;
 
-  if(!dmaCtx->bufferCtx[dmaCtx->active].data)
-    {
-      DEBUGPRINT(1,"dmaCtx.buffer uninitialized\n");
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+	if (!dmaCtx->psize)
+		DEBUGPRINT(1, "Error: Packet unaligned\n");
 
-  status = getDmaPacketSize(vCard);
-  if( status < 0 ) goto leave;
-  if( status == 0 ) {
-    status = VCAN_STAT_FAIL;
-    goto leave;
-  }
+	status = getDmaWord(vCard, &timestamp[1]);
 
-  // Read first two words to determine packet type
-  status = getDmaWord(vCard, &packet->id);
+	if (status)
+		return status;
 
-  if(status) goto leave;
+	return VCAN_STAT_OK;
+}
 
-  status = getDmaWord(vCard, &packet->control);
+//======================================================================
+//
+//======================================================================
+int readDMA(VCanCardData* vCard, pciefd_packet_t* packet)
+{
+	PciCanCardData* hCard = vCard->hwCardData;
+	dmaCtx_t* dmaCtx = &hCard->dmaCtx;
+	int status;
+	int channel;
 
-  if(status) goto leave;
+	if (dmaCtx->active < 0) {
+		DEBUGPRINT(1, "Error: Invalid buffer\n");
+		return VCAN_STAT_BAD_PARAMETER;
+	}
 
-  channel = packetChannelId(packet);
+	if (!dmaCtx->bufferCtx[dmaCtx->active].address) {
+		DEBUGPRINT(1, "Warning: DMA Buffer %u Not Setup\n", dmaCtx->active);
+		return VCAN_STAT_BAD_PARAMETER;
+	}
 
-  if( isDataPacket(packet) )
-    {
-      int i;
-      int dlc;
-      int nbytes;
-      int nwords;
+	if (!dmaCtx->bufferCtx[dmaCtx->active].data) {
+		DEBUGPRINT(1, "dmaCtx.buffer uninitialized\n");
+		return VCAN_STAT_BAD_PARAMETER;
+	}
 
-      DEBUGPRINT(3, "Data packet CH:%u.%u\n",channel, dmaCtx->active);
+	status = getDmaPacketSize(vCard);
+	if (status < 0)
+		goto leave;
+	if (status == 0) {
+		status = VCAN_STAT_FAIL;
+		goto leave;
+	}
 
-      if( !dmaCtx->psize ) goto unaligned;
+	// Read first two words to determine packet type
+	status = getDmaWord(vCard, &packet->id);
 
-      dlc = getDLC(packet);
+	if (status)
+		goto leave;
 
-      if((dlc > 0) && !dmaCtx->psize) goto unaligned;
+	status = getDmaWord(vCard, &packet->control);
 
-      if(isFlexibleDataRateFormat(packet))
-        {
-          nbytes = dlcToBytesFD(dlc);
-        }
-      else
-        {
-          nbytes = dlcToBytes(dlc);
-        }
+	if (status)
+		goto leave;
 
-      if ( isRemoteRequest(packet) ) {
-        nbytes = 0;
-      }
+	channel = packetChannelId(packet);
 
-      nwords = bytesToWordsCeil(nbytes);
+	if (isDataPacket(packet)) {
+		int i;
+		int dlc;
+		int nbytes;
+		int nwords;
 
-      status = getDmaPacketTS(vCard, packet);
-      if(status) goto leave;
+		DEBUGPRINT(3, "Data packet CH:%u.%u\n", channel, dmaCtx->active);
 
-      for(i=0;i<nwords;i++)
-        {
-          if( !dmaCtx->psize ) goto unaligned;
-          status = getDmaWord(vCard, &packet->data[i]);
-          if(status) goto leave;
-        }
+		if (!dmaCtx->psize)
+			goto unaligned;
 
-      if( dmaCtx->psize ) goto unaligned;
+		dlc = getDLC(packet);
 
-      goto leave;
-    }
-  else if( isAckPacket(packet)       ||
-           isTxrqPacket(packet)      ||
-           isEFlushAckPacket(packet) ||
-           isEFrameAckPacket(packet))
-    {
-      DEBUGPRINT(3,"ack packet CH:%u.%u\n",channel, dmaCtx->active);
-      status = getDmaPacketTS(vCard, packet);
-      if( dmaCtx->psize ) goto unaligned;
-      goto leave;
-    }
-  else if( isErrorPacket(packet) )
-    {
-      DEBUGPRINT(3,"error packet CH:%u.%u\n",channel, dmaCtx->active);
+		if ((dlc > 0) && !dmaCtx->psize)
+			goto unaligned;
 
-      if( !dmaCtx->psize ) goto unaligned;
+		if (isFlexibleDataRateFormat(packet)) {
+			nbytes = dlcToBytesFD(dlc);
+		}
+		else {
+			nbytes = dlcToBytes(dlc);
+		}
 
-      status = getDmaPacketTS(vCard, packet);
-      if( dmaCtx->psize ) goto unaligned;
-    }
-  else if( isOffsetPacket(packet) )
-    {
-      DEBUGPRINT(3,"offset CH:%u.%u\n",channel, dmaCtx->active);
-      if( dmaCtx->psize ) goto unaligned;
-    }
-  else if( isBusLoadPacket(packet) )
-    {
-      DEBUGPRINT(3,"bus load CH:%u.%u\n",channel, dmaCtx->active);
+		if (isRemoteRequest(packet)) {
+			nbytes = 0;
+		}
 
-      if( !dmaCtx->psize ) goto unaligned;
+		nwords = bytesToWordsCeil(nbytes);
 
-      status = getDmaPacketTS(vCard, packet);
+		status = getDmaPacketTS(vCard, packet);
+		if (status)
+			goto leave;
 
-      if( dmaCtx->psize ) goto unaligned;
-    }
-  else if( isStatusPacket(packet) )
-    {
-      DEBUGPRINT(3,"status CH:%u.%u\n",channel, dmaCtx->active);
+		for (i = 0; i < nwords; i++) {
+			if (!dmaCtx->psize)
+				goto unaligned;
+			status = getDmaWord(vCard, &packet->data[i]);
+			if (status)
+				goto leave;
+		}
 
-      if( !dmaCtx->psize ) goto unaligned;
+		if (dmaCtx->psize)
+			goto unaligned;
 
-      status = getDmaPacketTS(vCard, packet);
+		goto leave;
+	}
+	else if (isAckPacket(packet) || isTxrqPacket(packet) ||
+	         isEFlushAckPacket(packet) || isEFrameAckPacket(packet)) {
+		DEBUGPRINT(3, "ack packet CH:%u.%u\n", channel, dmaCtx->active);
+		status = getDmaPacketTS(vCard, packet);
+		if (dmaCtx->psize)
+			goto unaligned;
+		goto leave;
+	}
+	else if (isErrorPacket(packet)) {
+		DEBUGPRINT(3, "error packet CH:%u.%u\n", channel, dmaCtx->active);
 
-      if( dmaCtx->psize ) goto unaligned;
-    }
-  else if( isDelayPacket(packet) )
-    {
-      DEBUGPRINT(3,"delay CH:%u.%u\n",channel, dmaCtx->active);
-      if( dmaCtx->psize ) goto unaligned;
-    }
-  else{
-    DEBUGPRINT(1,"Undefined packet CH:%u.%u. id = 0x%08x, ctrl = 0x%08x\n",
-               channel, dmaCtx->active, packet->id, packet->control);
-    goto deactivate;
-  }
+		if (!dmaCtx->psize)
+			goto unaligned;
 
-  goto leave;
+		status = getDmaPacketTS(vCard, packet);
+		if (dmaCtx->psize)
+			goto unaligned;
+	}
+	else if (isOffsetPacket(packet)) {
+		DEBUGPRINT(3, "offset CH:%u.%u\n", channel, dmaCtx->active);
+		if (dmaCtx->psize)
+			goto unaligned;
+	}
+	else if (isBusLoadPacket(packet)) {
+		DEBUGPRINT(3, "bus load CH:%u.%u\n", channel, dmaCtx->active);
 
- unaligned:
-  DEBUGPRINT(1,"Packet unaligned\n");
+		if (!dmaCtx->psize)
+			goto unaligned;
 
- deactivate:
-  status = VCAN_STAT_FAIL;
-  dmaCtx->active = -1;
+		status = getDmaPacketTS(vCard, packet);
 
- leave:
-  return status;
+		if (dmaCtx->psize)
+			goto unaligned;
+	}
+	else if (isStatusPacket(packet)) {
+		DEBUGPRINT(3, "status CH:%u.%u\n", channel, dmaCtx->active);
+
+		if (!dmaCtx->psize)
+			goto unaligned;
+
+		status = getDmaPacketTS(vCard, packet);
+
+		if (dmaCtx->psize)
+			goto unaligned;
+	}
+	else if (isDelayPacket(packet)) {
+		DEBUGPRINT(3, "delay CH:%u.%u\n", channel, dmaCtx->active);
+		if (dmaCtx->psize)
+			goto unaligned;
+	}
+	else {
+		DEBUGPRINT(1, "Undefined packet CH:%u.%u. id = 0x%08x, ctrl = 0x%08x\n",
+		           channel, dmaCtx->active, packet->id, packet->control);
+		goto deactivate;
+	}
+
+	goto leave;
+
+unaligned:
+	DEBUGPRINT(1, "Packet unaligned\n");
+
+deactivate:
+	status = VCAN_STAT_FAIL;
+	dmaCtx->active = -1;
+
+leave:
+	return status;
 }
 #endif // USE_DMA
-
-
 
 //======================================================================
 // Convert 64-bit, 12.5 ns resolution time to 32-bit tick count (10us)
 //======================================================================
-static unsigned long timestamp_to_ticks(VCanCardData *vCard, unsigned long long ts)
+static unsigned long timestamp_to_ticks(VCanCardData* vCard,
+                                        unsigned long long ts)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
+	PciCanCardData* hCard = vCard->hwCardData;
 
-  ts = div_u64(ts, hCard->freqToTicksDivider);
+	ts = div_u64(ts, hCard->freqToTicksDivider);
 
-  DEBUGPRINT(4,"Freq:%u US:%u TS:%llu\n", hCard->frequency, vCard->usPerTick, ts);
+	DEBUGPRINT(4, "Freq:%u US:%u TS:%llu\n", hCard->frequency, vCard->usPerTick,
+	           ts);
 
-  return ts;
+	return ts;
 }
-
 
 //======================================================================
 // Current Time read from HW
@@ -864,360 +857,376 @@ static unsigned long timestamp_to_ticks(VCanCardData *vCard, unsigned long long 
 // Important: The LSB part must be read first. The MSB of the timestamp
 // is registered when the LSB is read.
 //======================================================================
-static unsigned long long pciCanHwTime(VCanCardData *vCard)
+static unsigned long long pciCanHwTime(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  unsigned long irqFlags;
-  uint64_t sw_ts;
+	PciCanCardData* hCard = vCard->hwCardData;
+	unsigned long irqFlags;
+	uint64_t sw_ts;
 
-  spin_lock_irqsave(&hCard->lock, irqFlags);
+	spin_lock_irqsave(&hCard->lock, irqFlags);
 
-  sw_ts = IORD(hCard->timestampBase, 0);
-  sw_ts |= (uint64_t)(IORD(hCard->timestampBase,1)) << 32;
+	sw_ts = IORD(hCard->timestampBase, 0);
+	sw_ts |= (uint64_t)(IORD(hCard->timestampBase, 1)) << 32;
 
-  spin_unlock_irqrestore(&hCard->lock, irqFlags);
+	spin_unlock_irqrestore(&hCard->lock, irqFlags);
 
-  return sw_ts;
+	return sw_ts;
 }
-
 
 //======================================================================
 // Current Timestamp read from HW
 //======================================================================
-static int pciCanTime(VCanCardData *vCard, uint64_t *time)
+static int pciCanTime(VCanCardData* vCard, uint64_t* time)
 {
-  uint64_t sw_ts;
+	uint64_t sw_ts;
 
-  sw_ts = pciCanHwTime(vCard);
+	sw_ts = pciCanHwTime(vCard);
 
-  *time = timestamp_to_ticks(vCard, sw_ts);
+	*time = timestamp_to_ticks(vCard, sw_ts);
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 }
-
 
 //======================================================================
 // /proc read function
 //======================================================================
-static int pciCanProcRead (struct seq_file* m, void* v)
+static int pciCanProcRead(struct seq_file* m, void* v)
 {
-  seq_printf(m, "\ntotal channels %d\n", driverData.noOfDevices);
+	seq_printf(m, "\ntotal channels %d\n", driverData.noOfDevices);
 
-  return 0;
+	return 0;
 }
-
 
 //======================================================================
 //  All acks received?
 //======================================================================
-static int pciCanInSync (VCanChanData *vChd)
+static int pciCanInSync(VCanChanData* vChd)
 {
-  PciCanChanData *hChd = vChd->hwChanData;
+	PciCanChanData* hChd = vChd->hwChanData;
 
-  DEBUGPRINT(4,"pciCanInSync:%u\n", atomic_read(&hChd->outstanding_tx));
+	DEBUGPRINT(4, "pciCanInSync:%u\n", atomic_read(&hChd->outstanding_tx));
 
-  return (atomic_read(&hChd->outstanding_tx) == 0);
+	return (atomic_read(&hChd->outstanding_tx) == 0);
 } // pciCanInSync
-
 
 //======================================================================
 //  Can we send now?
 //======================================================================
-static int pciCanTxAvailable (VCanChanData *vChd)
+static int pciCanTxAvailable(VCanChanData* vChd)
 {
-  PciCanChanData *hChd = vChd->hwChanData;
+	PciCanChanData* hChd = vChd->hwChanData;
 
-  DEBUGPRINT(4, "pciCanTxAvailable (outstanding_tx:%u)\n",atomic_read(&hChd->outstanding_tx));
+	DEBUGPRINT(4, "pciCanTxAvailable (outstanding_tx:%u)\n",
+	           atomic_read(&hChd->outstanding_tx));
 
-  return (atomic_read(&hChd->outstanding_tx) < MAX_OUTSTANDING_TX);
+	return (atomic_read(&hChd->outstanding_tx) < MAX_OUTSTANDING_TX);
 
 } // pciCanTxAvailable
-
 
 //======================================================================
 //  Calculate busload prescaler
 //======================================================================
-static uint32_t calcBusloadPrescaler (unsigned int quantaPerCycle, unsigned int brp)
+static uint32_t calcBusloadPrescaler(unsigned int quantaPerCycle,
+                                     unsigned int brp)
 {
-  unsigned int blp = (quantaPerCycle * brp) / 2;
-  if (blp < BLP_PRESC_MIN) {
-    blp = BLP_PRESC_MIN;
-  }
-  if (blp > BLP_PRESC_MAX) {
-    blp = BLP_PRESC_MAX;
-  }
-  return (PCIEFD_BLP_PRESC (blp) | PCIEFD_BLP_INTERV (BLP_INTERVAL));
+	unsigned int blp = (quantaPerCycle * brp) / 2;
+	if (blp < BLP_PRESC_MIN) {
+		blp = BLP_PRESC_MIN;
+	}
+	if (blp > BLP_PRESC_MAX) {
+		blp = BLP_PRESC_MAX;
+	}
+	return (PCIEFD_BLP_PRESC(blp) | PCIEFD_BLP_INTERV(BLP_INTERVAL));
 }
 
 //======================================================================
 //  Print card releated info
 //======================================================================
-static void printCardInfo(VCanCardData *vCard)
+static void printCardInfo(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  uint32_t date;
-  uint32_t time;
-  uint32_t rev,freq;
-  uint32_t build_l,build_h;
-  uint64_t hg_id;
+	PciCanCardData* hCard = vCard->hwCardData;
+	uint32_t date;
+	uint32_t time;
+	uint32_t rev, freq;
+	uint32_t build_l, build_h;
+	uint64_t hg_id;
 
-  INITPRINT("----------------------------------------------------------------\n");
-  INITPRINT("                        Card info\n");
-  INITPRINT("----------------------------------------------------------------\n");
-  INITPRINT("    * Build time      : %s\n", __TIMESTAMP__);
+	INITPRINT("----------------------------------------------------------------"
+	          "\n");
+	INITPRINT("                        Card info\n");
+	INITPRINT("----------------------------------------------------------------"
+	          "\n");
+	INITPRINT("    * Build time      : %s\n", __TIMESTAMP__);
 
-  date = IORD_SYSID_DATE(hCard->sysidBase);
-  time = IORD_SYSID_TIME(hCard->sysidBase);
+	date = IORD_SYSID_DATE(hCard->sysidBase);
+	time = IORD_SYSID_TIME(hCard->sysidBase);
 
-  rev = IORD_SYSID_REVISION(hCard->sysidBase);
+	rev = IORD_SYSID_REVISION(hCard->sysidBase);
 
-  build_l = IORD_SYSID_BUILD_L(hCard->sysidBase);
-  build_h = IORD_SYSID_BUILD_H(hCard->sysidBase);
+	build_l = IORD_SYSID_BUILD_L(hCard->sysidBase);
+	build_h = IORD_SYSID_BUILD_H(hCard->sysidBase);
 
-  hg_id = build_h;
-  hg_id <<= 16;
-  hg_id |= SYSID_BUILD_L_HG_ID_GET(build_l);
+	hg_id = build_h;
+	hg_id <<= 16;
+	hg_id |= SYSID_BUILD_L_HG_ID_GET(build_l);
 
-  INITPRINT("    * FPGA Version    : %u.%u.%u\n",
-            (uint32_t)SYSID_VERSION_MAJOR_GET(rev),
-            (uint32_t)SYSID_VERSION_MINOR_GET(rev),
-            (uint32_t)SYSID_BUILD_SEQNO_GET(build_l));
-  INITPRINT("    * FPGA Build time : %u %u\n", date, time);
-  INITPRINT("    * FPGA Hg id      : %08llx (%s)\n",
-            hg_id,
-            SYSID_BUILD_UC_GET(build_l) ? "has uncommitted changes" : "clean");
+	INITPRINT("    * FPGA Version    : %u.%u.%u\n",
+	          (uint32_t) SYSID_VERSION_MAJOR_GET(rev),
+	          (uint32_t) SYSID_VERSION_MINOR_GET(rev),
+	          (uint32_t) SYSID_BUILD_SEQNO_GET(build_l));
+	INITPRINT("    * FPGA Build time : %u %u\n", date, time);
+	INITPRINT("    * FPGA Hg id      : %08llx (%s)\n", hg_id,
+	          SYSID_BUILD_UC_GET(build_l) ? "has uncommitted changes"
+	                                      : "clean");
 
-  if (vCard->firmwareVersionMajor != PCIEFD_FPGA_MAJOR_VER) {
-    vCard->card_flags |= DEVHND_CARD_REFUSE_TO_USE_CAN;
-    printk("\n    *** ERROR: Unsupported firmware version %d.%d.%d. Please upgrade to at least %d.0.1\n\n",
-              vCard->firmwareVersionMajor,
-              vCard->firmwareVersionMinor,
-              vCard->firmwareVersionBuild,
-              PCIEFD_FPGA_MAJOR_VER);
-  }
+	if (vCard->firmwareVersionMajor != PCIEFD_FPGA_MAJOR_VER) {
+		vCard->card_flags |= DEVHND_CARD_REFUSE_TO_USE_CAN;
+		printk("\n    *** ERROR: Unsupported firmware version %d.%d.%d. Please "
+		       "upgrade to at least %d.0.1\n\n",
+		       vCard->firmwareVersionMajor, vCard->firmwareVersionMinor,
+		       vCard->firmwareVersionBuild, PCIEFD_FPGA_MAJOR_VER);
+	}
 
-  freq = IORD_SYSID_BUS_FREQUENCY(hCard->sysidBase);
-  INITPRINT("    * Frequency(pci bus)  : %u.%u MHz\n", freq/1000000, freq/100000 - 10*(freq/1000000));
+	freq = IORD_SYSID_BUS_FREQUENCY(hCard->sysidBase);
+	INITPRINT("    * Frequency(pci bus)  : %u.%u MHz\n", freq / 1000000,
+	          freq / 100000 - 10 * (freq / 1000000));
 
-  freq = IORD_SYSID_FREQUENCY(hCard->sysidBase);
-  INITPRINT("    * Frequency(can ctrl) : %u.%u MHz\n", freq/1000000, freq/100000 - 10*(freq/1000000));
+	freq = IORD_SYSID_FREQUENCY(hCard->sysidBase);
+	INITPRINT("    * Frequency(can ctrl) : %u.%u MHz\n", freq / 1000000,
+	          freq / 100000 - 10 * (freq / 1000000));
 }
 
 //======================================================================
 //  Verify parameter area
 //======================================================================
-#define KCC_PARAM_IMAGE_SIZE  64*1024
-#define KCC_PARAM_START_ADDR     (31*65536L)
+#define KCC_PARAM_IMAGE_SIZE 64 * 1024
+#define KCC_PARAM_START_ADDR (31 * 65536L)
 
-static int verifyParamImage(unsigned char * param_image)
+static int verifyParamImage(unsigned char* param_image)
 {
-  kcc_param_image_t *p;
+	kcc_param_image_t* p;
 
-  p= (kcc_param_image_t *)param_image;
-  if ((p->version != PARAM_SYSTEM_VERSION) || (p->magic != PARAM_MAGIC))
-  {
-    DEBUGPRINT(1,"ERROR: verifyParamImage version or magic error\n");
-    DEBUGPRINT(1,"       version: got %d, expected %d\n", p->version, PARAM_SYSTEM_VERSION);
-    DEBUGPRINT(1,"       magic:   got %x, expected %x\n", p->magic, PARAM_MAGIC);
-    return -6;
-  }
+	p = (kcc_param_image_t*) param_image;
+	if ((p->version != PARAM_SYSTEM_VERSION) || (p->magic != PARAM_MAGIC)) {
+		DEBUGPRINT(1, "ERROR: verifyParamImage version or magic error\n");
+		DEBUGPRINT(1, "       version: got %d, expected %d\n", p->version,
+		           PARAM_SYSTEM_VERSION);
+		DEBUGPRINT(1, "       magic:   got %x, expected %x\n", p->magic,
+		           PARAM_MAGIC);
+		return -6;
+	}
 
-  if (p->crc != calculateCRC32(p->param,sizeof(p->param)))
-  {
-    DEBUGPRINT(1,"ERROR: verifyParamImage incorrect crc should be 0x%08x, is 0x%08x\n", p->crc, calculateCRC32(p->param,sizeof(p->param)));
-    return -6;
-  }
-  return VCAN_STAT_OK;
+	if (p->crc != calculateCRC32(p->param, sizeof(p->param))) {
+		DEBUGPRINT(1,
+		           "ERROR: verifyParamImage incorrect crc should be 0x%08x, is "
+		           "0x%08x\n",
+		           p->crc, calculateCRC32(p->param, sizeof(p->param)));
+		return -6;
+	}
+	return VCAN_STAT_OK;
 }
-
 
 //======================================================================
 //  Read and verify parameter area
 //======================================================================
-static unsigned char * readParamImage(void *serialflash_base)
+static unsigned char* readParamImage(void* serialflash_base)
 {
-  unsigned char * param_image;
-  int ret;
+	unsigned char* param_image;
+	int ret;
 
-  alt_flash_epcs_dev epcsFlashDev;
+	alt_flash_epcs_dev epcsFlashDev;
 
-  param_image = kmalloc(KCC_PARAM_IMAGE_SIZE, GFP_KERNEL);
+	param_image = kmalloc(KCC_PARAM_IMAGE_SIZE, GFP_KERNEL);
 
-  if(param_image == NULL)
-  {
-    DEBUGPRINT(1,"ERROR: readParamImage() kmalloc failed\n");
-    return NULL;
-  }
+	if (param_image == NULL) {
+		DEBUGPRINT(1, "ERROR: readParamImage() kmalloc failed\n");
+		return NULL;
+	}
 
-  alt_epcs_flash_init(&epcsFlashDev, serialflash_base);
-  if(alt_epcs_flash_read(&epcsFlashDev.dev, KCC_PARAM_START_ADDR, param_image, KCC_PARAM_IMAGE_SIZE))
-  {
-      DEBUGPRINT(1,"ERROR: readParamImage() read failed\n");
-      kfree(param_image);
-      return NULL;
-  }
+	alt_epcs_flash_init(&epcsFlashDev, serialflash_base);
+	if (alt_epcs_flash_read(&epcsFlashDev.dev, KCC_PARAM_START_ADDR,
+	                        param_image, KCC_PARAM_IMAGE_SIZE)) {
+		DEBUGPRINT(1, "ERROR: readParamImage() read failed\n");
+		kfree(param_image);
+		return NULL;
+	}
 
-  ret = verifyParamImage(param_image);
-  if(ret)
-  {
-    DEBUGPRINT(1,"ERROR: readParamImage() version or magic error\n");
-    kfree(param_image);
-    return NULL;
-  }
+	ret = verifyParamImage(param_image);
+	if (ret) {
+		DEBUGPRINT(1, "ERROR: readParamImage() version or magic error\n");
+		kfree(param_image);
+		return NULL;
+	}
 
-  return param_image;
+	return param_image;
 }
 
 //======================================================================
 //  Read a parameter
 //======================================================================
-int readParameter (unsigned char * param_image,
-                   unsigned int    paramNo,
-                   void          * data,
-                   unsigned int    paramLen)
+int readParameter(unsigned char* param_image, unsigned int paramNo, void* data,
+                  unsigned int paramLen)
 {
-  kcc_param_image_t *p;
+	kcc_param_image_t* p;
 
-  if(param_image == NULL)
-  {
-   return VCAN_STAT_FAIL;
-  }
+	if (param_image == NULL) {
+		return VCAN_STAT_FAIL;
+	}
 
-  if(paramNo < MAX_NB_PARAMETERS)
-  {
-    p= (kcc_param_image_t *)param_image;
-    if(p->param[paramNo].magic == PARAM_MAGIC)
-    {
-      if (paramLen < p->param[paramNo].param_len)
-      {
-        DEBUGPRINT(1,"Error: readParameter paramNo=%d paramLen=%d, actual_paramlen=%d\n", paramNo, paramLen, p->param[paramNo].param_len);
-        return VCAN_STAT_FAIL;
-      }
-      else
-      {
-        memcpy(data,p->param[paramNo].data, paramLen);
-       return VCAN_STAT_OK;
-      }
-    }
-  }
+	if (paramNo < MAX_NB_PARAMETERS) {
+		p = (kcc_param_image_t*) param_image;
+		if (p->param[paramNo].magic == PARAM_MAGIC) {
+			if (paramLen < p->param[paramNo].param_len) {
+				DEBUGPRINT(1,
+				           "Error: readParameter paramNo=%d paramLen=%d, "
+				           "actual_paramlen=%d\n",
+				           paramNo, paramLen, p->param[paramNo].param_len);
+				return VCAN_STAT_FAIL;
+			}
+			else {
+				memcpy(data, p->param[paramNo].data, paramLen);
+				return VCAN_STAT_OK;
+			}
+		}
+	}
 
-  return VCAN_STAT_FAIL;
+	return VCAN_STAT_FAIL;
 }
 
-
-#define PARAM_SERIAL_NUMBER                   124
-#define PARAM_MANUFACTURING_DATE              125
-#define PARAM_HW_REVISION                     127
-#define PARAM_HW_TYPE                         128
-#define PARAM_EAN_NUMBER                      129
-#define PARAM_NUMBER_CHANNELS                 130
-#define PARAM_CHANNEL_A_TRANS_TYPE            132
-#define PARAM_CHANNEL_B_TRANS_TYPE            133
-#define PARAM_HW_DESCRIPTION_0                134
-#define PARAM_HW_DESCRIPTION_1                135
-#define PARAM_HW_DESCRIPTION_2                136
-#define PARAM_CHANNEL_C_TRANS_TYPE            137
-#define PARAM_CHANNEL_D_TRANS_TYPE            138
-#define PARAM_EAN_NUMBER_PRODUCT              143
-#define PARAM_MAX_BITRATE                     148
-
+#define PARAM_SERIAL_NUMBER 124
+#define PARAM_MANUFACTURING_DATE 125
+#define PARAM_HW_REVISION 127
+#define PARAM_HW_TYPE 128
+#define PARAM_EAN_NUMBER 129
+#define PARAM_NUMBER_CHANNELS 130
+#define PARAM_CHANNEL_A_TRANS_TYPE 132
+#define PARAM_CHANNEL_B_TRANS_TYPE 133
+#define PARAM_HW_DESCRIPTION_0 134
+#define PARAM_HW_DESCRIPTION_1 135
+#define PARAM_HW_DESCRIPTION_2 136
+#define PARAM_CHANNEL_C_TRANS_TYPE 137
+#define PARAM_CHANNEL_D_TRANS_TYPE 138
+#define PARAM_EAN_NUMBER_PRODUCT 143
+#define PARAM_MAX_BITRATE 148
 
 // Parameter length, in bytes.
-#define PARAM_SERIAL_NUMBER_LEN               4
-#define PARAM_MANUFACTURING_DATE_LEN          4
-#define PARAM_HW_REVISION_LEN                 1
-#define PARAM_HW_TYPE_LEN                     1
-#define PARAM_EAN_NUMBER_LEN                  8
-#define PARAM_NUMBER_CHANNELS_LEN             1
-#define PARAM_CHANNEL_TRANS_TYPE_LEN          1
-#define PARAM_HW_DESCRIPTION_PART_LEN         8
-#define PARAM_EAN_NUMBER_PRODUCT_LEN          8
-#define PARAM_MAX_BITRATE_LEN                 4
-
+#define PARAM_SERIAL_NUMBER_LEN 4
+#define PARAM_MANUFACTURING_DATE_LEN 4
+#define PARAM_HW_REVISION_LEN 1
+#define PARAM_HW_TYPE_LEN 1
+#define PARAM_EAN_NUMBER_LEN 8
+#define PARAM_NUMBER_CHANNELS_LEN 1
+#define PARAM_CHANNEL_TRANS_TYPE_LEN 1
+#define PARAM_HW_DESCRIPTION_PART_LEN 8
+#define PARAM_EAN_NUMBER_PRODUCT_LEN 8
+#define PARAM_MAX_BITRATE_LEN 4
 
 //======================================================================
 // Get H/W info from EPCS Serial Flash device
 // This is only called before a card is initialized, so no one can
 // interfere with the accesses (lock not even initialized at this point).
 //======================================================================
-static int getCardInfo(VCanCardData *vCard)
+static int getCardInfo(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
+	PciCanCardData* hCard = vCard->hwCardData;
 
-  alt_flash_dev *epcsFlashDev;
-  unsigned char * param_image;
-  unsigned int i;
+	alt_flash_dev* epcsFlashDev;
+	unsigned char* param_image;
+	unsigned int i;
 
-  epcsFlashDev = &(hCard->epcsFlashDev.dev);
+	epcsFlashDev = &(hCard->epcsFlashDev.dev);
 
-  alt_epcs_flash_init(&(hCard->epcsFlashDev), hCard->serialFlashBase);
+	alt_epcs_flash_init(&(hCard->epcsFlashDev), hCard->serialFlashBase);
 
-  if ( hCard->epcsFlashDev.silicon_id == 0x14 ) /* EPCS16 */
-    {
-      param_image = readParamImage(hCard->serialFlashBase);
-      if(param_image)
-      {
-        INITPRINT("----------------------------------------------------------------\n");
-        INITPRINT("                        Parameters\n");
-        INITPRINT("----------------------------------------------------------------\n");
+	if (hCard->epcsFlashDev.silicon_id == 0x14) /* EPCS16 */
+	{
+		param_image = readParamImage(hCard->serialFlashBase);
+		if (param_image) {
+			INITPRINT("--------------------------------------------------------"
+			          "--------\n");
+			INITPRINT("                        Parameters\n");
+			INITPRINT("--------------------------------------------------------"
+			          "--------\n");
 
-        readParameter(param_image, PARAM_EAN_NUMBER, vCard->ean, PARAM_EAN_NUMBER_LEN);
-        INITPRINT("    * Ean: %x-%05x-%05x-%x\n",
-                  ((*(uint32_t*)&(vCard->ean[4])) >> 12),
-                  (((*(uint32_t*)&(vCard->ean[4])) & 0xfff) << 8) | (((*(uint32_t*)&(vCard->ean[0])) >> 24) & 0xff),
-                  ((*(uint32_t*)&(vCard->ean[0])) >> 4) & 0xfffff,
-                  ((*(uint32_t*)&(vCard->ean[4])) & 0x0f));
+			readParameter(param_image, PARAM_EAN_NUMBER, vCard->ean,
+			              PARAM_EAN_NUMBER_LEN);
+			INITPRINT("    * Ean: %x-%05x-%05x-%x\n",
+			          ((*(uint32_t*) &(vCard->ean[4])) >> 12),
+			          (((*(uint32_t*) &(vCard->ean[4])) & 0xfff) << 8) |
+			                  (((*(uint32_t*) &(vCard->ean[0])) >> 24) & 0xff),
+			          ((*(uint32_t*) &(vCard->ean[0])) >> 4) & 0xfffff,
+			          ((*(uint32_t*) &(vCard->ean[4])) & 0x0f));
 
-        readParameter(param_image, PARAM_HW_REVISION, &vCard->hwRevisionMajor, PARAM_HW_REVISION_LEN);
-        INITPRINT("    * HW Revision Major: %u\n",vCard->hwRevisionMajor);
+			readParameter(param_image, PARAM_HW_REVISION,
+			              &vCard->hwRevisionMajor, PARAM_HW_REVISION_LEN);
+			INITPRINT("    * HW Revision Major: %u\n", vCard->hwRevisionMajor);
 
-        readParameter(param_image, PARAM_SERIAL_NUMBER, &vCard->serialNumber, PARAM_SERIAL_NUMBER_LEN);
-        INITPRINT("    * Serial: %u\n",vCard->serialNumber);
+			readParameter(param_image, PARAM_SERIAL_NUMBER,
+			              &vCard->serialNumber, PARAM_SERIAL_NUMBER_LEN);
+			INITPRINT("    * Serial: %u\n", vCard->serialNumber);
 
-        readParameter(param_image, PARAM_HW_TYPE, &vCard->hw_type, PARAM_HW_TYPE_LEN);
-        INITPRINT("    * HW Type: %u\n",vCard->hw_type);
+			readParameter(param_image, PARAM_HW_TYPE, &vCard->hw_type,
+			              PARAM_HW_TYPE_LEN);
+			INITPRINT("    * HW Type: %u\n", vCard->hw_type);
 
-        readParameter(param_image, PARAM_MAX_BITRATE, &vCard->default_max_bitrate, PARAM_MAX_BITRATE_LEN);
-        INITPRINT("    * Default max bitrate: %d\n", (int)vCard->default_max_bitrate);
-        vCard->current_max_bitrate = vCard->default_max_bitrate;
+			readParameter(param_image, PARAM_MAX_BITRATE,
+			              &vCard->default_max_bitrate, PARAM_MAX_BITRATE_LEN);
+			INITPRINT("    * Default max bitrate: %d\n",
+			          (int) vCard->default_max_bitrate);
+			vCard->current_max_bitrate = vCard->default_max_bitrate;
 
-        readParameter(param_image, PARAM_NUMBER_CHANNELS, &vCard->nrChannels, PARAM_NUMBER_CHANNELS_LEN);
-        INITPRINT("    * Number of channels: %u\n",vCard->nrChannels);
+			readParameter(param_image, PARAM_NUMBER_CHANNELS,
+			              &vCard->nrChannels, PARAM_NUMBER_CHANNELS_LEN);
+			INITPRINT("    * Number of channels: %u\n", vCard->nrChannels);
 
-        if(vCard->nrChannels > 0) {
-          readParameter(param_image, PARAM_CHANNEL_A_TRANS_TYPE, &vCard->chanData[0]->transType, PARAM_CHANNEL_TRANS_TYPE_LEN);
-          INITPRINT("    * Transceiver type ch A: %u\n",vCard->chanData[0]->transType);
-        }
+			if (vCard->nrChannels > 0) {
+				readParameter(param_image, PARAM_CHANNEL_A_TRANS_TYPE,
+				              &vCard->chanData[0]->transType,
+				              PARAM_CHANNEL_TRANS_TYPE_LEN);
+				INITPRINT("    * Transceiver type ch A: %u\n",
+				          vCard->chanData[0]->transType);
+			}
 
-        if(vCard->nrChannels > 1) {
-          readParameter(param_image, PARAM_CHANNEL_B_TRANS_TYPE, &vCard->chanData[1]->transType, PARAM_CHANNEL_TRANS_TYPE_LEN);
-          INITPRINT("    * Transceiver type ch B: %u\n",vCard->chanData[1]->transType);
-        }
+			if (vCard->nrChannels > 1) {
+				readParameter(param_image, PARAM_CHANNEL_B_TRANS_TYPE,
+				              &vCard->chanData[1]->transType,
+				              PARAM_CHANNEL_TRANS_TYPE_LEN);
+				INITPRINT("    * Transceiver type ch B: %u\n",
+				          vCard->chanData[1]->transType);
+			}
 
-        if(vCard->nrChannels > 2) {
-          readParameter(param_image, PARAM_CHANNEL_C_TRANS_TYPE, &vCard->chanData[2]->transType, PARAM_CHANNEL_TRANS_TYPE_LEN);
-          INITPRINT("    * Transceiver type ch C: %u\n",vCard->chanData[2]->transType);
-        }
+			if (vCard->nrChannels > 2) {
+				readParameter(param_image, PARAM_CHANNEL_C_TRANS_TYPE,
+				              &vCard->chanData[2]->transType,
+				              PARAM_CHANNEL_TRANS_TYPE_LEN);
+				INITPRINT("    * Transceiver type ch C: %u\n",
+				          vCard->chanData[2]->transType);
+			}
 
-        if(vCard->nrChannels > 3) {
-          readParameter(param_image, PARAM_CHANNEL_D_TRANS_TYPE, &vCard->chanData[3]->transType, PARAM_CHANNEL_TRANS_TYPE_LEN);
-          INITPRINT("    * Transceiver type ch D: %u\n",vCard->chanData[3]->transType);
-        }
+			if (vCard->nrChannels > 3) {
+				readParameter(param_image, PARAM_CHANNEL_D_TRANS_TYPE,
+				              &vCard->chanData[3]->transType,
+				              PARAM_CHANNEL_TRANS_TYPE_LEN);
+				INITPRINT("    * Transceiver type ch D: %u\n",
+				          vCard->chanData[3]->transType);
+			}
 
-        for (i = 0; i < MAX_CARD_CHANNELS; i++) {
-          readParameter(param_image, CHANNEL_NAME_PARAM_INDEX_FIRST + i, cust_channel_name[i], sizeof(cust_channel_name[i]));
-          INITPRINT("    * Cust channel name [%u]: %s\n", i, cust_channel_name[i]);
-        }
+			for (i = 0; i < MAX_CARD_CHANNELS; i++) {
+				readParameter(param_image, CHANNEL_NAME_PARAM_INDEX_FIRST + i,
+				              cust_channel_name[i],
+				              sizeof(cust_channel_name[i]));
+				INITPRINT("    * Cust channel name [%u]: %s\n", i,
+				          cust_channel_name[i]);
+			}
 
-        kfree(param_image);
+			kfree(param_image);
 
-        return VCAN_STAT_OK;
-      }
-    }
+			return VCAN_STAT_OK;
+		}
+	}
 
-  return VCAN_STAT_NO_DEVICE;
+	return VCAN_STAT_NO_DEVICE;
 }
-
 
 //======================================================================
 // Find out some info about the H/W
@@ -1225,150 +1234,159 @@ static int getCardInfo(VCanCardData *vCard)
 // This is only called before a card is initialized, so no one can
 // interfere with the accesses (lock not even initialized at this point).
 //======================================================================
-static int pciCanProbe (VCanCardData *vCard)
+static int pciCanProbe(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  int i;
-  int status;
-  uint32_t rev;
+	PciCanCardData* hCard = vCard->hwCardData;
+	int i;
+	int status;
+	uint32_t rev;
 
-  if (hCard->pcieBar0Base == 0) {
-    DEBUGPRINT(1, "pcicanProbe card_present = 0\n");
-    vCard->cardPresent = 0;
-    return VCAN_STAT_NO_DEVICE;
-  }
+	if (hCard->pcieBar0Base == 0) {
+		DEBUGPRINT(1, "pcicanProbe card_present = 0\n");
+		vCard->cardPresent = 0;
+		return VCAN_STAT_NO_DEVICE;
+	}
 
+	status = getCardInfo(vCard);
 
-  status = getCardInfo(vCard);
+	if (status != VCAN_STAT_OK) {
+		return VCAN_STAT_NO_DEVICE;
+	}
 
-  if (status != VCAN_STAT_OK) {
-    return VCAN_STAT_NO_DEVICE;
-  }
+	rev = IORD_SYSID_REVISION(hCard->sysidBase); // FPGA Design FW rev.
 
-  rev = IORD_SYSID_REVISION(hCard->sysidBase); // FPGA Design FW rev.
+	vCard->firmwareVersionMajor = SYSID_VERSION_MAJOR_GET(rev);
+	vCard->firmwareVersionMinor = SYSID_VERSION_MINOR_GET(rev);
+	vCard->firmwareVersionBuild =
+	        SYSID_BUILD_SEQNO_GET(IORD_SYSID_BUILD_L(hCard->sysidBase));
 
-  vCard->firmwareVersionMajor = SYSID_VERSION_MAJOR_GET(rev);
-  vCard->firmwareVersionMinor = SYSID_VERSION_MINOR_GET(rev);
-  vCard->firmwareVersionBuild = SYSID_BUILD_SEQNO_GET(IORD_SYSID_BUILD_L(hCard->sysidBase));
+	vCard->hwRevisionMinor = 0;
 
-  vCard->hwRevisionMinor = 0;
+	set_capability_value(
+	        vCard,
+	        VCAN_CHANNEL_CAP_SEND_ERROR_FRAMES |
+	                VCAN_CHANNEL_CAP_RECEIVE_ERROR_FRAMES |
+	                VCAN_CHANNEL_CAP_TIMEBASE_ON_CARD |
+	                VCAN_CHANNEL_CAP_BUSLOAD_CALCULATION |
+	                VCAN_CHANNEL_CAP_ERROR_COUNTERS |
+	                VCAN_CHANNEL_CAP_EXTENDED_CAN | VCAN_CHANNEL_CAP_TXREQUEST |
+	                VCAN_CHANNEL_CAP_TXACKNOWLEDGE | VCAN_CHANNEL_CAP_CANFD |
+	                VCAN_CHANNEL_CAP_CANFD_NONISO | VCAN_CHANNEL_CAP_SILENTMODE,
+	        0xFFFFFFFF, 0xFFFFFFFF, MAX_CARD_CHANNELS);
 
-  set_capability_value (vCard,
-                        VCAN_CHANNEL_CAP_SEND_ERROR_FRAMES    |
-                        VCAN_CHANNEL_CAP_RECEIVE_ERROR_FRAMES |
-                        VCAN_CHANNEL_CAP_TIMEBASE_ON_CARD     |
-                        VCAN_CHANNEL_CAP_BUSLOAD_CALCULATION  |
-                        VCAN_CHANNEL_CAP_ERROR_COUNTERS       |
-                        VCAN_CHANNEL_CAP_EXTENDED_CAN         |
-                        VCAN_CHANNEL_CAP_TXREQUEST            |
-                        VCAN_CHANNEL_CAP_TXACKNOWLEDGE        |
-                        VCAN_CHANNEL_CAP_CANFD                |
-                        VCAN_CHANNEL_CAP_CANFD_NONISO         |
-                        VCAN_CHANNEL_CAP_SILENTMODE,
-                        0xFFFFFFFF,
-                        0xFFFFFFFF,
-                        MAX_CARD_CHANNELS);
+	vCard->nrChannels =
+	        KCAN_SYSID_NUM_CHAN_GET(IORD_SYSID_VERSION(hCard->sysidBase));
+	if (vCard->nrChannels > MAX_CARD_CHANNELS) {
+		vCard->nrChannels = MAX_CARD_CHANNELS;
+	}
 
-  vCard->nrChannels = KCAN_SYSID_NUM_CHAN_GET(IORD_SYSID_VERSION(hCard->sysidBase));
-  if(vCard->nrChannels > MAX_CARD_CHANNELS) {
-    vCard->nrChannels = MAX_CARD_CHANNELS;
-  }
-
-  printCardInfo(vCard);
+	printCardInfo(vCard);
 
 #if USE_DMA
-  hCard->useDma = 1;
+	hCard->useDma = 1;
 #endif
 #if USE_ADJUSTABLE_PLL
-  INITPRINT("Min Phase Shift %u ps\n", IORD_PLL_MIN_PHASE_SHIFT(hCard->pllBase));
-  INITPRINT("Max Phase Shift %u ps\n", IORD_PLL_MAX_PHASE_SHIFT(hCard->pllBase));
-  INITPRINT("Max total Offset %u ppm\n", IORD_PLL_MAX_OFFSET(hCard->pllBase));
+	INITPRINT("Min Phase Shift %u ps\n",
+	          IORD_PLL_MIN_PHASE_SHIFT(hCard->pllBase));
+	INITPRINT("Max Phase Shift %u ps\n",
+	          IORD_PLL_MAX_PHASE_SHIFT(hCard->pllBase));
+	INITPRINT("Max total Offset %u ppm\n", IORD_PLL_MAX_OFFSET(hCard->pllBase));
 #endif
 
-  INITPRINT( "----------------------------------------------------------------\n");
-  INITPRINT( "                        Capabilites\n");
-  INITPRINT( "----------------------------------------------------------------\n");
+	INITPRINT("----------------------------------------------------------------"
+	          "\n");
+	INITPRINT("                        Capabilites\n");
+	INITPRINT("----------------------------------------------------------------"
+	          "\n");
 
 #if USE_DMA
-  if (hwSupportDMA(hCard->canRxBuffer)) {
-    INITPRINT( "    * Receiver DMA supported\n");
-  }
-  else {
-    INITPRINT( "    * Receiver DMA Not supported\n");
-    hCard->useDma = 0;
-  }
+	if (hwSupportDMA(hCard->canRxBuffer)) {
+		INITPRINT("    * Receiver DMA supported\n");
+	}
+	else {
+		INITPRINT("    * Receiver DMA Not supported\n");
+		hCard->useDma = 0;
+	}
 #endif
 
-  INITPRINT( "    * Max read buffer support %u\n", fifoPacketCountRxMax(hCard->canRxBuffer));
-  INITPRINT( "    * number of channels %d\n", vCard->nrChannels);
+	INITPRINT("    * Max read buffer support %u\n",
+	          fifoPacketCountRxMax(hCard->canRxBuffer));
+	INITPRINT("    * number of channels %d\n", vCard->nrChannels);
 
-  for (i = 0; i < vCard->nrChannels; i++) {
-    VCanChanData   *vChd = vCard->chanData[i];
+	for (i = 0; i < vCard->nrChannels; i++) {
+		VCanChanData* vChd = vCard->chanData[i];
 
-    if (vChd != NULL) {
-      PciCanChanData *hChd = vChd->hwChanData;
+		if (vChd != NULL) {
+			PciCanChanData* hChd = vChd->hwChanData;
 
-      // Multiple instances of a device are placed in consecutive memory space with _SPAN bytes separation.
-      // This is hardcoded in the Altera bus system.
-      hChd->canControllerBase = OFFSET_FROM_BASE(hCard->canControllerBase, (i * CAN_CONTROLLER_SPAN));
+			// Multiple instances of a device are placed in consecutive memory
+			// space with _SPAN bytes separation. This is hardcoded in the
+			// Altera bus system.
+			hChd->canControllerBase = OFFSET_FROM_BASE(
+			        hCard->canControllerBase, (i * CAN_CONTROLLER_SPAN));
 
-      // PCIe interface interrupt mask for this channel
-      hChd->tx_irq_msk = (CAN_CONTROLLER_0_IRQ << i);
+			// PCIe interface interrupt mask for this channel
+			hChd->tx_irq_msk = (CAN_CONTROLLER_0_IRQ << i);
 
-      vChd->channel  = i;
+			vChd->channel = i;
 
-      INITPRINT( "    -----------------------------------------------------------\n");
-      INITPRINT( "    Channel %u\n", i);
-      INITPRINT( "    -----------------------------------------------------------\n");
+			INITPRINT("    "
+			          "--------------------------------------------------------"
+			          "---\n");
+			INITPRINT("    Channel %u\n", i);
+			INITPRINT("    "
+			          "--------------------------------------------------------"
+			          "---\n");
 
-      if (hwSupportCanFD(hChd->canControllerBase)) {
-        INITPRINT( "        * CAN FD supported\n");
-      }
+			if (hwSupportCanFD(hChd->canControllerBase)) {
+				INITPRINT("        * CAN FD supported\n");
+			}
 
-      if (hwSupportCAP(hChd->canControllerBase)) {
-        set_capability_value (vCard,
-                              VCAN_CHANNEL_CAP_SINGLE_SHOT,
-                              1,
-                              (1 << i),
-                              vCard->nrChannels);
+			if (hwSupportCAP(hChd->canControllerBase)) {
+				set_capability_value(vCard, VCAN_CHANNEL_CAP_SINGLE_SHOT, 1,
+				                     (1 << i), vCard->nrChannels);
 
-        set_capability_mask (vCard,
-                             VCAN_CHANNEL_CAP_SINGLE_SHOT,
-                             1,
-                             (1 << i),
-                             vCard->nrChannels);
+				set_capability_mask(vCard, VCAN_CHANNEL_CAP_SINGLE_SHOT, 1,
+				                    (1 << i), vCard->nrChannels);
 
-        INITPRINT( "        * SINGLE SHOT supported\n");
-      }
+				INITPRINT("        * SINGLE SHOT supported\n");
+			}
 
-      INITPRINT( "        * Max write buffer support %u\n",fifoPacketCountTxMax(hChd->canControllerBase));
+			INITPRINT("        * Max write buffer support %u\n",
+			          fifoPacketCountTxMax(hChd->canControllerBase));
 
-      if (fifoPacketCountTxMax(hChd->canControllerBase) < MAX_OUTSTANDING_TX) {
-        DEBUGPRINT(1, "        * Error, MAX_OUTSTANDING_TX=%u larger than buffer\n", MAX_OUTSTANDING_TX);
-        return VCAN_STAT_NO_MEMORY;
-      }
-    } else {
-      vCard->cardPresent = 0;
-      return VCAN_STAT_NO_DEVICE;
-    }
-  }
+			if (fifoPacketCountTxMax(hChd->canControllerBase) <
+			    MAX_OUTSTANDING_TX) {
+				DEBUGPRINT(1,
+				           "        * Error, MAX_OUTSTANDING_TX=%u larger than "
+				           "buffer\n",
+				           MAX_OUTSTANDING_TX);
+				return VCAN_STAT_NO_MEMORY;
+			}
+		}
+		else {
+			vCard->cardPresent = 0;
+			return VCAN_STAT_NO_DEVICE;
+		}
+	}
 
-  if (vCard->nrChannels == 0) {
-    // No channels found
-    vCard->cardPresent = 0;
-    return VCAN_STAT_NO_DEVICE;
-  }
+	if (vCard->nrChannels == 0) {
+		// No channels found
+		vCard->cardPresent = 0;
+		return VCAN_STAT_NO_DEVICE;
+	}
 
-  vCard->cardPresent = 1;
+	vCard->cardPresent = 1;
 
-  hCard->frequency = IORD_SYSID_FREQUENCY(hCard->sysidBase);
-  hCard->freqToTicksDivider = hCard->frequency / 100000;
-  if (hCard->freqToTicksDivider == 0) hCard->freqToTicksDivider = 1;
+	hCard->frequency = IORD_SYSID_FREQUENCY(hCard->sysidBase);
+	hCard->freqToTicksDivider = hCard->frequency / 100000;
+	if (hCard->freqToTicksDivider == 0)
+		hCard->freqToTicksDivider = 1;
 
-  INITPRINT( "----------------------------------------------------------------\n");
+	INITPRINT("----------------------------------------------------------------"
+	          "\n");
 
-
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 } // pciCanProbe
 
 //======================================================================
@@ -1376,18 +1394,18 @@ static int pciCanProbe (VCanCardData *vCard)
 // Important: Is it too late to start transceivers at bus on?
 // Wait for stable power before leaving reset mode?
 //======================================================================
-static void pciCanActivateTransceiver (VCanChanData *vChd, int linemode)
+static void pciCanActivateTransceiver(VCanChanData* vChd, int linemode)
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  VCanCardData *vCard = vChd->vCard;
-  PciCanCardData *hCard = vCard->hwCardData;
-  int freq = IORD_SYSID_BUS_FREQUENCY(hCard->sysidBase);
+	PciCanChanData* hChd = vChd->hwChanData;
+	VCanCardData* vCard = vChd->vCard;
+	PciCanCardData* hCard = vCard->hwCardData;
+	int freq = IORD_SYSID_BUS_FREQUENCY(hCard->sysidBase);
 
-  pwmInit(freq);
+	pwmInit(freq);
 
-  // Start with 95% power
-  pwmSetFrequency(hChd->canControllerBase,500000);
-  pwmSetDutyCycle(hChd->canControllerBase,95);
+	// Start with 95% power
+	pwmSetFrequency(hChd->canControllerBase, 500000);
+	pwmSetDutyCycle(hChd->canControllerBase, 95);
 }
 
 //======================================================================
@@ -1395,371 +1413,387 @@ static void pciCanActivateTransceiver (VCanChanData *vChd, int linemode)
 // counters which keep track of the error rate
 // Must be called with channel locked (to avoid access interference).
 //======================================================================
-static void pciCanResetErrorCounter (VCanChanData *vChd)
+static void pciCanResetErrorCounter(VCanChanData* vChd)
 {
-  vChd->errorCount = 0;
+	vChd->errorCount = 0;
 } // pciCanResetErrorCounter
-
 
 //======================================================================
 //  Set bit timing
 //======================================================================
-static int pciCanSetBusParams (VCanChanData *vChd, VCanBusParams *par)
+static int pciCanSetBusParams(VCanChanData* vChd, VCanBusParams* par)
 {
-  PciCanChanData *hChd  = vChd->hwChanData;
-  VCanCardData   *vCard = vChd->vCard;
-  PciCanCardData *hCard = vCard->hwCardData;
-  unsigned int    quantaPerCycle;
-  unsigned long   brp;
-  unsigned long   mode;
-  unsigned long   freq;
-  unsigned long   recalc_freq;
-  unsigned int    tseg1;
-  unsigned int    tseg2;
-  unsigned int    sjw;
-  unsigned long   irqFlags;
-  unsigned long   btrn, btrd=0;
-  uint32_t bus_load_prescaler;
+	PciCanChanData* hChd = vChd->hwChanData;
+	VCanCardData* vCard = vChd->vCard;
+	PciCanCardData* hCard = vCard->hwCardData;
+	unsigned int quantaPerCycle;
+	unsigned long brp;
+	unsigned long mode;
+	unsigned long freq;
+	unsigned long recalc_freq;
+	unsigned int tseg1;
+	unsigned int tseg2;
+	unsigned int sjw;
+	unsigned long irqFlags;
+	unsigned long btrn, btrd = 0;
+	uint32_t bus_load_prescaler;
 
-  freq  = par->freq;
-  sjw   = par->sjw;
-  tseg1 = par->tseg1;
-  tseg2 = par->tseg2;
+	freq = par->freq;
+	sjw = par->sjw;
+	tseg1 = par->tseg1;
+	tseg2 = par->tseg2;
 
-  quantaPerCycle = tseg1 + tseg2 + 1;
-  // Detect overflow.
-  if (quantaPerCycle < tseg1) {
-    DEBUGPRINT(1,"Error (pciefd): Bad parameter (tseg1)\n");
-    return VCAN_STAT_BAD_PARAMETER;
-  }
+	quantaPerCycle = tseg1 + tseg2 + 1;
+	// Detect overflow.
+	if (quantaPerCycle < tseg1) {
+		DEBUGPRINT(1, "Error (pciefd): Bad parameter (tseg1)\n");
+		return VCAN_STAT_BAD_PARAMETER;
+	}
 
-  if (quantaPerCycle < tseg2) {
-    DEBUGPRINT(1,"Error (pciefd): Bad parameter (tseg2)\n");
-    return VCAN_STAT_BAD_PARAMETER;
-  }
+	if (quantaPerCycle < tseg2) {
+		DEBUGPRINT(1, "Error (pciefd): Bad parameter (tseg2)\n");
+		return VCAN_STAT_BAD_PARAMETER;
+	}
 
-  DEBUGPRINT(2, "Set CAN/Arbitration params: bitrate:%lu, tseg1:%u, tseg2:%u, sjw:%u\n",
-             freq, tseg1, tseg2, sjw);
+	DEBUGPRINT(2,
+	           "Set CAN/Arbitration params: bitrate:%lu, tseg1:%u, tseg2:%u, "
+	           "sjw:%u\n",
+	           freq, tseg1, tseg2, sjw);
 
-  if (quantaPerCycle == 0 || freq == 0) {
-    DEBUGPRINT(1,"Error (pciefd): Bad parameter (freq)\n");
-    return VCAN_STAT_BAD_PARAMETER;
-  }
+	if (quantaPerCycle == 0 || freq == 0) {
+		DEBUGPRINT(1, "Error (pciefd): Bad parameter (freq)\n");
+		return VCAN_STAT_BAD_PARAMETER;
+	}
 
-  brp = hCard->frequency / (freq * quantaPerCycle);
+	brp = hCard->frequency / (freq * quantaPerCycle);
 
-  recalc_freq = hCard->frequency / (brp * quantaPerCycle);
-  if (recalc_freq != freq) {
-    DEBUGPRINT(1,"Error (pciefd): CAN prescaler residual. The parameters bitrate:%lu tseg1:%u tseg2:%u gives this bitrate:%lu\n",
-               freq,tseg1,tseg2, recalc_freq);
-    return VCAN_STAT_BAD_PARAMETER;
-  }
+	recalc_freq = hCard->frequency / (brp * quantaPerCycle);
+	if (recalc_freq != freq) {
+		DEBUGPRINT(1,
+		           "Error (pciefd): CAN prescaler residual. The parameters "
+		           "bitrate:%lu tseg1:%u tseg2:%u gives this bitrate:%lu\n",
+		           freq, tseg1, tseg2, recalc_freq);
+		return VCAN_STAT_BAD_PARAMETER;
+	}
 
-  btrn = PCIEFD_BTR_SEG2(tseg2-1) | PCIEFD_BTR_SEG1(tseg1-1) | PCIEFD_BTR_SJW(sjw-1) | PCIEFD_BTR_BRP(brp-1);
+	btrn = PCIEFD_BTR_SEG2(tseg2 - 1) | PCIEFD_BTR_SEG1(tseg1 - 1) |
+	       PCIEFD_BTR_SJW(sjw - 1) | PCIEFD_BTR_BRP(brp - 1);
 
-  bus_load_prescaler = calcBusloadPrescaler(quantaPerCycle, brp);
+	bus_load_prescaler = calcBusloadPrescaler(quantaPerCycle, brp);
 
-  if(hwSupportCanFD(hChd->canControllerBase)) {
-    freq  = par->freq_brs;
-    sjw   = par->sjw_brs;
-    tseg1 = par->tseg1_brs;
-    tseg2 = par->tseg2_brs;
+	if (hwSupportCanFD(hChd->canControllerBase)) {
+		freq = par->freq_brs;
+		sjw = par->sjw_brs;
+		tseg1 = par->tseg1_brs;
+		tseg2 = par->tseg2_brs;
 
-    quantaPerCycle = tseg1 + tseg2 + 1;
-    // Detect overflow.
-    if (quantaPerCycle < tseg1) {
-      DEBUGPRINT(1,"Error (pciefd): Bad parameter fd (tseg1)\n");
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+		quantaPerCycle = tseg1 + tseg2 + 1;
+		// Detect overflow.
+		if (quantaPerCycle < tseg1) {
+			DEBUGPRINT(1, "Error (pciefd): Bad parameter fd (tseg1)\n");
+			return VCAN_STAT_BAD_PARAMETER;
+		}
 
-    if (quantaPerCycle < tseg2) {
-      DEBUGPRINT(1,"Error (pciefd): Bad parameter fd (tseg2)\n");
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+		if (quantaPerCycle < tseg2) {
+			DEBUGPRINT(1, "Error (pciefd): Bad parameter fd (tseg2)\n");
+			return VCAN_STAT_BAD_PARAMETER;
+		}
 
-    if (quantaPerCycle == 0 || freq == 0) {
-      DEBUGPRINT(1,"Error (pciefd): Bad parameter fd (freq)\n");
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+		if (quantaPerCycle == 0 || freq == 0) {
+			DEBUGPRINT(1, "Error (pciefd): Bad parameter fd (freq)\n");
+			return VCAN_STAT_BAD_PARAMETER;
+		}
 
-    brp = hCard->frequency / (freq * quantaPerCycle);
+		brp = hCard->frequency / (freq * quantaPerCycle);
 
-    recalc_freq = hCard->frequency / (brp * quantaPerCycle);
-    if (recalc_freq != freq) {
-      DEBUGPRINT(1,"Error (pciefd): CAN FD prescaler residual. The parameters bitrate:%lu tseg1:%u tseg2:%u give this bitrate:%lu\n",
-                 freq,tseg1,tseg2, recalc_freq);
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+		recalc_freq = hCard->frequency / (brp * quantaPerCycle);
+		if (recalc_freq != freq) {
+			DEBUGPRINT(
+			        1,
+			        "Error (pciefd): CAN FD prescaler residual. The parameters "
+			        "bitrate:%lu tseg1:%u tseg2:%u give this bitrate:%lu\n",
+			        freq, tseg1, tseg2, recalc_freq);
+			return VCAN_STAT_BAD_PARAMETER;
+		}
 
-    if (brp > CANFD_MAX_PRESCALER_VALUE) {
-      DEBUGPRINT(1,"[%s, %d] Error (pciefd): prescaler (%lu) out of limits (>%u)\n", __FILE__, __LINE__, brp,
-                 CANFD_MAX_PRESCALER_VALUE);
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+		if (brp > CANFD_MAX_PRESCALER_VALUE) {
+			DEBUGPRINT(1,
+			           "[%s, %d] Error (pciefd): prescaler (%lu) out of limits "
+			           "(>%u)\n",
+			           __FILE__, __LINE__, brp, CANFD_MAX_PRESCALER_VALUE);
+			return VCAN_STAT_BAD_PARAMETER;
+		}
 
-    if (brp   < 1 || brp   > 8192 || // 13-bits 1 + 0..8191
-        sjw   < 1 || sjw   >   16 || // 4-bits  1 + 0..15
-        tseg1 < 1 || tseg1 >  512 || // 9-bits  1 + 0..511
-        tseg2 < 1 || tseg2 >   32) { // 5-bits  1 + 0..31
-      DEBUGPRINT(1,"Error (pciefd): Other checks can fd data phase brp:%lu sjw:%u tseg1:%u tseg2:%u\n",brp,sjw,tseg1,tseg2);
-      return VCAN_STAT_BAD_PARAMETER;
-    }
+		if (brp < 1 || brp > 8192 ||    // 13-bits 1 + 0..8191
+		    sjw < 1 || sjw > 16 ||      // 4-bits  1 + 0..15
+		    tseg1 < 1 || tseg1 > 512 || // 9-bits  1 + 0..511
+		    tseg2 < 1 || tseg2 > 32) {  // 5-bits  1 + 0..31
+			DEBUGPRINT(1,
+			           "Error (pciefd): Other checks can fd data phase brp:%lu "
+			           "sjw:%u tseg1:%u tseg2:%u\n",
+			           brp, sjw, tseg1, tseg2);
+			return VCAN_STAT_BAD_PARAMETER;
+		}
 
-    btrd = PCIEFD_BTR_SEG2(tseg2-1) | PCIEFD_BTR_SEG1(tseg1-1) | PCIEFD_BTR_SJW(sjw-1) | PCIEFD_BTR_BRP(brp-1);
+		btrd = PCIEFD_BTR_SEG2(tseg2 - 1) | PCIEFD_BTR_SEG1(tseg1 - 1) |
+		       PCIEFD_BTR_SJW(sjw - 1) | PCIEFD_BTR_BRP(brp - 1);
 
-    if (OPEN_AS_CAN != vChd->openMode) {
-      bus_load_prescaler = calcBusloadPrescaler(quantaPerCycle, brp);
-    }
-  }
+		if (OPEN_AS_CAN != vChd->openMode) {
+			bus_load_prescaler = calcBusloadPrescaler(quantaPerCycle, brp);
+		}
+	}
 
-  // Use mutex to allow this process to sleep
-  wait_for_completion(&hChd->busOnCompletion);
+	// Use mutex to allow this process to sleep
+	wait_for_completion(&hChd->busOnCompletion);
 
-  if( vChd->isOnBus ) {
-    DEBUGPRINT(2, "Error (pciefd): Trying to set bus parameter when on bus CH:%u\n",vChd->channel);
+	if (vChd->isOnBus) {
+		DEBUGPRINT(2,
+		           "Error (pciefd): Trying to set bus parameter when on bus "
+		           "CH:%u\n",
+		           vChd->channel);
 
-    complete(&hChd->busOnCompletion);
+		complete(&hChd->busOnCompletion);
 
-    pciCanRequestChipState(vChd);
+		pciCanRequestChipState(vChd);
 
-    return VCAN_STAT_OK;
-  }
+		return VCAN_STAT_OK;
+	}
 
-  spin_lock_irqsave(&hChd->lock, irqFlags);
+	spin_lock_irqsave(&hChd->lock, irqFlags);
 
-  IOWR_PCIEFD_BLP(hChd->canControllerBase, bus_load_prescaler);
-  hChd->bus_load_prescaler = bus_load_prescaler;
+	IOWR_PCIEFD_BLP(hChd->canControllerBase, bus_load_prescaler);
+	hChd->bus_load_prescaler = bus_load_prescaler;
 
-  mode = IORD_PCIEFD_MOD(hChd->canControllerBase);
+	mode = IORD_PCIEFD_MOD(hChd->canControllerBase);
 
-  /* Put the circuit in Reset Mode */
-  IOWR_PCIEFD_MOD(hChd->canControllerBase, mode | PCIEFD_MOD_RM_MSK);
+	/* Put the circuit in Reset Mode */
+	IOWR_PCIEFD_MOD(hChd->canControllerBase, mode | PCIEFD_MOD_RM_MSK);
 
-  IOWR_PCIEFD_BTRN(hChd->canControllerBase, btrn);
+	IOWR_PCIEFD_BTRN(hChd->canControllerBase, btrn);
 
-  if(hwSupportCanFD(hChd->canControllerBase))
-    IOWR_PCIEFD_BTRD(hChd->canControllerBase, btrd);
+	if (hwSupportCanFD(hChd->canControllerBase))
+		IOWR_PCIEFD_BTRD(hChd->canControllerBase, btrd);
 
-  mode &= ~PCIEFD_MOD_SSO_MSK;
-  mode |= PCIEFD_MOD_SSO(hChd->sso);
+	mode &= ~PCIEFD_MOD_SSO_MSK;
+	mode |= PCIEFD_MOD_SSO(hChd->sso);
 
-  IOWR_PCIEFD_MOD(hChd->canControllerBase, mode); // Restore previous reset mode status
+	IOWR_PCIEFD_MOD(hChd->canControllerBase,
+	                mode); // Restore previous reset mode status
 
-  spin_unlock_irqrestore(&hChd->lock, irqFlags);
+	spin_unlock_irqrestore(&hChd->lock, irqFlags);
 
-  complete(&hChd->busOnCompletion);
+	complete(&hChd->busOnCompletion);
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 } // pciCanSetBusParams
-
 
 //======================================================================
 //  Get bit timing
 //======================================================================
-static int pciCanGetBusParams (VCanChanData *vChd, VCanBusParams *par)
+static int pciCanGetBusParams(VCanChanData* vChd, VCanBusParams* par)
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  VCanCardData *vCard = vChd->vCard;
-  PciCanCardData *hCard = vCard->hwCardData;
+	PciCanChanData* hChd = vChd->hwChanData;
+	VCanCardData* vCard = vChd->vCard;
+	PciCanCardData* hCard = vCard->hwCardData;
 
-  unsigned int  quantaPerCycle;
-  unsigned long brp;
-  unsigned long irqFlags;
-  unsigned long btrn,btrd=0;
+	unsigned int quantaPerCycle;
+	unsigned long brp;
+	unsigned long irqFlags;
+	unsigned long btrn, btrd = 0;
 
-  spin_lock_irqsave(&hChd->lock, irqFlags);
+	spin_lock_irqsave(&hChd->lock, irqFlags);
 
-  btrn = IORD_PCIEFD_BTRN(hChd->canControllerBase);
+	btrn = IORD_PCIEFD_BTRN(hChd->canControllerBase);
 
-  if(hwSupportCanFD(hChd->canControllerBase))
-    {
-      btrd = IORD_PCIEFD_BTRD(hChd->canControllerBase);
-    }
-  spin_unlock_irqrestore(&hChd->lock, irqFlags);
+	if (hwSupportCanFD(hChd->canControllerBase)) {
+		btrd = IORD_PCIEFD_BTRD(hChd->canControllerBase);
+	}
+	spin_unlock_irqrestore(&hChd->lock, irqFlags);
 
-  par->sjw   = 1 + PCIEFD_BTR_SJW_GET(btrn);
-  par->tseg1 = 1 + PCIEFD_BTR_SEG1_GET(btrn);
-  par->tseg2 = 1 + PCIEFD_BTR_SEG2_GET(btrn);
-  par->samp3 = 1;
+	par->sjw = 1 + PCIEFD_BTR_SJW_GET(btrn);
+	par->tseg1 = 1 + PCIEFD_BTR_SEG1_GET(btrn);
+	par->tseg2 = 1 + PCIEFD_BTR_SEG2_GET(btrn);
+	par->samp3 = 1;
 
-  quantaPerCycle = par->tseg1 + par->tseg2 + 1;
-  brp = 1 + PCIEFD_BTR_BRP_GET(btrn);
+	quantaPerCycle = par->tseg1 + par->tseg2 + 1;
+	brp = 1 + PCIEFD_BTR_BRP_GET(btrn);
 
-  par->freq = hCard->frequency / (quantaPerCycle * brp);
+	par->freq = hCard->frequency / (quantaPerCycle * brp);
 
-  if(hwSupportCanFD(hChd->canControllerBase))
-    {
-      par->sjw_brs   = 1 + PCIEFD_BTR_SJW_GET(btrd);
-      par->tseg1_brs = 1 + PCIEFD_BTR_SEG1_GET(btrd);
-      par->tseg2_brs = 1 + PCIEFD_BTR_SEG2_GET(btrd);
-      par->samp3 = 1;
+	if (hwSupportCanFD(hChd->canControllerBase)) {
+		par->sjw_brs = 1 + PCIEFD_BTR_SJW_GET(btrd);
+		par->tseg1_brs = 1 + PCIEFD_BTR_SEG1_GET(btrd);
+		par->tseg2_brs = 1 + PCIEFD_BTR_SEG2_GET(btrd);
+		par->samp3 = 1;
 
-      quantaPerCycle = par->tseg1_brs + par->tseg2_brs + 1;
-      brp = 1 + PCIEFD_BTR_BRP_GET(btrd);
+		quantaPerCycle = par->tseg1_brs + par->tseg2_brs + 1;
+		brp = 1 + PCIEFD_BTR_BRP_GET(btrd);
 
-      par->freq_brs = hCard->frequency / (quantaPerCycle * brp);
-    }
+		par->freq_brs = hCard->frequency / (quantaPerCycle * brp);
+	}
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 } // pciCanGetBusParams
-
-
 
 //======================================================================
 //  Set silent or normal mode
 //======================================================================
-static int pciCanSetOutputMode (VCanChanData *vChd, int silent)
+static int pciCanSetOutputMode(VCanChanData* vChd, int silent)
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  unsigned long irqFlags;
-  uint32_t mode;
+	PciCanChanData* hChd = vChd->hwChanData;
+	unsigned long irqFlags;
+	uint32_t mode;
 
-  spin_lock_irqsave(&hChd->lock, irqFlags);
+	spin_lock_irqsave(&hChd->lock, irqFlags);
 
-  // Save control register
-  mode = IORD_PCIEFD_MOD(hChd->canControllerBase);
-  // Put the circuit in Reset Mode
-  IOWR_PCIEFD_MOD(hChd->canControllerBase, mode | PCIEFD_MOD_RM_MSK);
+	// Save control register
+	mode = IORD_PCIEFD_MOD(hChd->canControllerBase);
+	// Put the circuit in Reset Mode
+	IOWR_PCIEFD_MOD(hChd->canControllerBase, mode | PCIEFD_MOD_RM_MSK);
 
-  if (silent) {
-    mode |= PCIEFD_MOD_LOM_MSK;
-  }
-  else {
-    mode &= ~PCIEFD_MOD_LOM_MSK;
-  }
+	if (silent) {
+		mode |= PCIEFD_MOD_LOM_MSK;
+	}
+	else {
+		mode &= ~PCIEFD_MOD_LOM_MSK;
+	}
 
-  // Restore control register
-  IOWR_PCIEFD_MOD(hChd->canControllerBase, mode);
+	// Restore control register
+	IOWR_PCIEFD_MOD(hChd->canControllerBase, mode);
 
-  spin_unlock_irqrestore(&hChd->lock, irqFlags);
+	spin_unlock_irqrestore(&hChd->lock, irqFlags);
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 } // pciCanSetOutputMode
-
 
 //======================================================================
 //  Get silent or normal mode
 //======================================================================
-static int pciCanGetOutputMode (VCanChanData *vChd, int *silent)
+static int pciCanGetOutputMode(VCanChanData* vChd, int* silent)
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  unsigned long irqFlags;
-  uint32_t mode;
+	PciCanChanData* hChd = vChd->hwChanData;
+	unsigned long irqFlags;
+	uint32_t mode;
 
-  if (!vChd || !silent) return VCAN_STAT_BAD_PARAMETER;
+	if (!vChd || !silent)
+		return VCAN_STAT_BAD_PARAMETER;
 
-  spin_lock_irqsave(&hChd->lock, irqFlags);
+	spin_lock_irqsave(&hChd->lock, irqFlags);
 
-  mode = IORD_PCIEFD_MOD(hChd->canControllerBase);
+	mode = IORD_PCIEFD_MOD(hChd->canControllerBase);
 
-  *silent = !!(mode & PCIEFD_MOD_LOM_MSK);
+	*silent = !!(mode & PCIEFD_MOD_LOM_MSK);
 
-  spin_unlock_irqrestore(&hChd->lock, irqFlags);
+	spin_unlock_irqrestore(&hChd->lock, irqFlags);
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 }
 
 //======================================================================
 //  Line mode
 //======================================================================
-static int pciCanSetTranceiverMode (VCanChanData *vChd, int linemode, int resnet)
+static int pciCanSetTranceiverMode(VCanChanData* vChd, int linemode, int resnet)
 {
-  vChd->lineMode = linemode;
-  return VCAN_STAT_OK;
+	vChd->lineMode = linemode;
+	return VCAN_STAT_OK;
 } // pciCanSetTranceiverMode
-
 
 //======================================================================
 // Query chip status (internal)
 // Should not be called with channel locked
 //======================================================================
-static int pciCanRequestChipState (VCanChanData *vChd)
+static int pciCanRequestChipState(VCanChanData* vChd)
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  VCanCardData *vCard = vChd->vCard;
-  PciCanCardData *hCard = vCard->hwCardData;
-  WaitNode waitNode;
-  unsigned long irqFlags = 0;
-  int timeout;
+	PciCanChanData* hChd = vChd->hwChanData;
+	VCanCardData* vCard = vChd->vCard;
+	PciCanCardData* hCard = vCard->hwCardData;
+	WaitNode waitNode;
+	unsigned long irqFlags = 0;
+	int timeout;
 
-  int current_id = atomic_inc_return(&hCard->status_seq_no);
-  int active_id;
+	int current_id = atomic_inc_return(&hCard->status_seq_no);
+	int active_id;
 
-  DEBUGPRINT(4,"pciCanRequestChipState\n");
+	DEBUGPRINT(4, "pciCanRequestChipState\n");
 
-  if ( current_id > 255 ) {
-    // Only one unit is allowed to wrap around counter
-    spin_lock_irqsave(&hCard->lock, irqFlags);
+	if (current_id > 255) {
+		// Only one unit is allowed to wrap around counter
+		spin_lock_irqsave(&hCard->lock, irqFlags);
 
-    if ( (atomic_read(&hCard->status_seq_no) > 255) )
-      {
-        atomic_set(&hCard->status_seq_no, 1);
-        DEBUGPRINT(4,"Wraparound status request id\n");
-      }
+		if ((atomic_read(&hCard->status_seq_no) > 255)) {
+			atomic_set(&hCard->status_seq_no, 1);
+			DEBUGPRINT(4, "Wraparound status request id\n");
+		}
 
-    spin_unlock_irqrestore(&hCard->lock, irqFlags);
+		spin_unlock_irqrestore(&hCard->lock, irqFlags);
 
-    current_id = atomic_inc_return(&hCard->status_seq_no);
-  }
+		current_id = atomic_inc_return(&hCard->status_seq_no);
+	}
 
-  // Sleep until status request packet is returned or timeout.
-  // Must not be called from interrupt context.
-  init_completion(&waitNode.waitCompletion);
+	// Sleep until status request packet is returned or timeout.
+	// Must not be called from interrupt context.
+	init_completion(&waitNode.waitCompletion);
 
-  waitNode.replyPtr = NULL;
-  waitNode.cmdNr    = vChd->channel; // Channel ID
-  waitNode.transId  = current_id;
-  waitNode.timedOut = 0;
+	waitNode.replyPtr = NULL;
+	waitNode.cmdNr = vChd->channel; // Channel ID
+	waitNode.transId = current_id;
+	waitNode.timedOut = 0;
 
-  // Add to card's list of expected responses
-  write_lock_irqsave(&hCard->replyWaitListLock, irqFlags);
+	// Add to card's list of expected responses
+	write_lock_irqsave(&hCard->replyWaitListLock, irqFlags);
 
-  spin_lock(&hChd->lock);
+	spin_lock(&hChd->lock);
 
-  active_id = statPendingRequest(hChd->canControllerBase);
+	active_id = statPendingRequest(hChd->canControllerBase);
 
-  if ( active_id >= 0 ) {
-    DEBUGPRINT(4,"Found active %d\n",active_id);
-    waitNode.transId  = active_id;
-    current_id = active_id;
-  } else {
-    DEBUGPRINT(4,"Status request:%u\n",current_id);
-    // Request chip state from CAN Controller
-    fpgaStatusRequest(hChd->canControllerBase, current_id);
+	if (active_id >= 0) {
+		DEBUGPRINT(4, "Found active %d\n", active_id);
+		waitNode.transId = active_id;
+		current_id = active_id;
+	}
+	else {
+		DEBUGPRINT(4, "Status request:%u\n", current_id);
+		// Request chip state from CAN Controller
+		fpgaStatusRequest(hChd->canControllerBase, current_id);
 
-    hChd->debug.requested_status++;
-  }
+		hChd->debug.requested_status++;
+	}
 
-  spin_unlock(&hChd->lock);
+	spin_unlock(&hChd->lock);
 
-  list_add(&waitNode.list, &hCard->replyWaitList);
-  write_unlock_irqrestore(&hCard->replyWaitListLock, irqFlags);
+	list_add(&waitNode.list, &hCard->replyWaitList);
+	write_unlock_irqrestore(&hCard->replyWaitListLock, irqFlags);
 
-  DEBUGPRINT(6,"Waiting for stat ch:%u\n",waitNode.cmdNr);
+	DEBUGPRINT(6, "Waiting for stat ch:%u\n", waitNode.cmdNr);
 
-  timeout = wait_for_completion_timeout(&waitNode.waitCompletion, msecs_to_jiffies(PCIEFD_SRQ_RESP_WAIT_TIME));
+	timeout = wait_for_completion_timeout(
+	        &waitNode.waitCompletion,
+	        msecs_to_jiffies(PCIEFD_SRQ_RESP_WAIT_TIME));
 
-  // Now we either got a response or a timeout
-  write_lock_irqsave(&hCard->replyWaitListLock, irqFlags);
-  list_del(&waitNode.list);
-  write_unlock_irqrestore(&hCard->replyWaitListLock, irqFlags);
+	// Now we either got a response or a timeout
+	write_lock_irqsave(&hCard->replyWaitListLock, irqFlags);
+	list_del(&waitNode.list);
+	write_unlock_irqrestore(&hCard->replyWaitListLock, irqFlags);
 
-  if (timeout == 0) {
-    DEBUGPRINT(1, "pciefdWaitResponse: return VCAN_STAT_TIMEOUT ch:%u id:%u\n",waitNode.cmdNr,current_id);
-    return VCAN_STAT_TIMEOUT;
-  } else {
-    DEBUGPRINT(4,"Status ack on ch:%u, id:%u\n",waitNode.cmdNr, current_id);
-  }
+	if (timeout == 0) {
+		DEBUGPRINT(1,
+		           "pciefdWaitResponse: return VCAN_STAT_TIMEOUT ch:%u id:%u\n",
+		           waitNode.cmdNr, current_id);
+		return VCAN_STAT_TIMEOUT;
+	}
+	else {
+		DEBUGPRINT(4, "Status ack on ch:%u, id:%u\n", waitNode.cmdNr,
+		           current_id);
+	}
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 } // pciCanRequestChipState
-
 
 //======================================================================
 //  Wait functions for Bus On/Off
 //======================================================================
 
-static int waitForIdleMode(int loopmax, VCanChanData *vChd)
+static int waitForIdleMode(int loopmax, VCanChanData* vChd)
 /* Make sure that unit is in reset mode before starting flush.
  *
  * Waits a maximum of approximately loopmax ms for unit to reach idle state.
@@ -1769,34 +1803,34 @@ static int waitForIdleMode(int loopmax, VCanChanData *vChd)
  * Only call with spinlock held and interrupts disabled.
  */
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  int loopcount = loopmax;
+	PciCanChanData* hChd = vChd->hwChanData;
+	int loopcount = loopmax;
 
-  while ( loopcount && !statIdle(hChd->canControllerBase) )
-  {
-    spin_unlock_irq(&hChd->lock);
+	while (loopcount && !statIdle(hChd->canControllerBase)) {
+		spin_unlock_irq(&hChd->lock);
 
-    set_current_state(TASK_UNINTERRUPTIBLE);
-    schedule_timeout(msecs_to_jiffies(10)); // Wait 10 ms
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(msecs_to_jiffies(10)); // Wait 10 ms
 
-    spin_lock_irq(&hChd->lock);
+		spin_lock_irq(&hChd->lock);
 
-    if (vChd->vCard->cardPresent) {
-      --loopcount;
-    } else {
-      loopcount = 0;
-    }
-  }
+		if (vChd->vCard->cardPresent) {
+			--loopcount;
+		}
+		else {
+			loopcount = 0;
+		}
+	}
 
-  if ( loopcount == 0 ) {
-    return -1;
-  } else {
-    return loopmax - loopcount;
-  }
+	if (loopcount == 0) {
+		return -1;
+	}
+	else {
+		return loopmax - loopcount;
+	}
 }
 
-
-static int waitForAbort(int loopmax, VCanChanData *vChd)
+static int waitForAbort(int loopmax, VCanChanData* vChd)
 /* Wait for abort to complete before continuing.
  *
  * Waits a maximum of approximately loopmax ms for abort command to finish.
@@ -1804,59 +1838,59 @@ static int waitForAbort(int loopmax, VCanChanData *vChd)
  * returns -1 to indicate timeout.
  *
  * Only call with spinlock held and interrupts disabled.
-*/
+ */
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  int loopcount = loopmax;
+	PciCanChanData* hChd = vChd->hwChanData;
+	int loopcount = loopmax;
 
-  while (loopcount)
-  {
-    if ( istatCheck(hChd->canControllerBase, PCIEFD_IRQ_ABD_MSK) ) {
-      DEBUGPRINT(4,"Abort Done CH:%u\n",vChd->channel);
-      break;
-    } else {
-      DEBUGPRINT(4,"Abort Busy CH:%u\n",vChd->channel);
+	while (loopcount) {
+		if (istatCheck(hChd->canControllerBase, PCIEFD_IRQ_ABD_MSK)) {
+			DEBUGPRINT(4, "Abort Done CH:%u\n", vChd->channel);
+			break;
+		}
+		else {
+			DEBUGPRINT(4, "Abort Busy CH:%u\n", vChd->channel);
 
-      spin_unlock_irq(&hChd->lock);
+			spin_unlock_irq(&hChd->lock);
 
-      set_current_state(TASK_UNINTERRUPTIBLE);
-      schedule_timeout(msecs_to_jiffies(1)); // Wait 1 ms
+			set_current_state(TASK_UNINTERRUPTIBLE);
+			schedule_timeout(msecs_to_jiffies(1)); // Wait 1 ms
 
-      spin_lock_irq(&hChd->lock);
-    }
+			spin_lock_irq(&hChd->lock);
+		}
 
-    if ( statFlushRequest(hChd->canControllerBase) ) {
-      DEBUGPRINT(3, "Warning: tx flush req is asserted CH:%u\n",
-                 vChd->channel);
-    }
+		if (statFlushRequest(hChd->canControllerBase)) {
+			DEBUGPRINT(3, "Warning: tx flush req is asserted CH:%u\n",
+			           vChd->channel);
+		}
 
-    if (vChd->vCard->cardPresent) {
-      --loopcount;
-    } else {
-      loopcount = 0;
-    }
-  }
+		if (vChd->vCard->cardPresent) {
+			--loopcount;
+		}
+		else {
+			loopcount = 0;
+		}
+	}
 
-  if ( loopcount < loopmax - 10 ) {
-    DEBUGPRINT(3, "Waiting for Abort Done more than 10ms (%u)\n",
-               loopmax - loopcount);
-  }
+	if (loopcount < loopmax - 10) {
+		DEBUGPRINT(3, "Waiting for Abort Done more than 10ms (%u)\n",
+		           loopmax - loopcount);
+	}
 
-  if ( !istatCheck(hChd->canControllerBase, PCIEFD_IRQ_ABD_MSK) )
-  {
-    DEBUGPRINT(3, "Abort Still Busy, probably failed initiating CH:%u\n",
-               vChd->channel);
-  }
+	if (!istatCheck(hChd->canControllerBase, PCIEFD_IRQ_ABD_MSK)) {
+		DEBUGPRINT(3, "Abort Still Busy, probably failed initiating CH:%u\n",
+		           vChd->channel);
+	}
 
-  if ( loopcount == 0 ) {
-    return -1;
-  } else {
-    return loopmax - loopcount;
-  }
+	if (loopcount == 0) {
+		return -1;
+	}
+	else {
+		return loopmax - loopcount;
+	}
 }
 
-
-static int waitForFlush(int loopmax, VCanChanData *vChd)
+static int waitForFlush(int loopmax, VCanChanData* vChd)
 /* Wait for flush to complete before continuing.
  *
  * Waits a maximum of approximately loopmax ms for packet flush to finish.
@@ -1866,48 +1900,48 @@ static int waitForFlush(int loopmax, VCanChanData *vChd)
  * Only call with spinlock held and interrupts disabled.
  */
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  int loopcount = loopmax;
+	PciCanChanData* hChd = vChd->hwChanData;
+	int loopcount = loopmax;
 
-  while (loopcount)
-  {
-    uint32_t level;
+	while (loopcount) {
+		uint32_t level;
 
-    level = fifoPacketCountTx(hChd->canControllerBase);
+		level = fifoPacketCountTx(hChd->canControllerBase);
 
-    if (level == 0) {
-      break;
-    }
+		if (level == 0) {
+			break;
+		}
 
-    DEBUGPRINT(3, "TX FIFO Should have been empty P:%u CH:%u STAT:%x\n",
-               level, vChd->channel,
-               IORD_PCIEFD_STAT(hChd->canControllerBase));
+		DEBUGPRINT(3, "TX FIFO Should have been empty P:%u CH:%u STAT:%x\n",
+		           level, vChd->channel,
+		           IORD_PCIEFD_STAT(hChd->canControllerBase));
 
-    spin_unlock_irq(&hChd->lock);
+		spin_unlock_irq(&hChd->lock);
 
-    set_current_state(TASK_UNINTERRUPTIBLE);
-    schedule_timeout(msecs_to_jiffies(1)); // Wait 1 ms
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(msecs_to_jiffies(1)); // Wait 1 ms
 
-    spin_lock_irq(&hChd->lock);
+		spin_lock_irq(&hChd->lock);
 
-    if (vChd->vCard->cardPresent) {
-      --loopcount;
-    } else {
-      loopcount = 0;
-    }
-  }
+		if (vChd->vCard->cardPresent) {
+			--loopcount;
+		}
+		else {
+			loopcount = 0;
+		}
+	}
 
-  if ( loopcount == 0 ) {
-    DEBUGPRINT(1, "Warning: Transmit buffer is not empty:\n");
-    DEBUGPRINT(1, " - Probably a failed flush operation [BUSON]\n");
-    return -1;
-  } else {
-    return loopmax - loopcount;
-  }
+	if (loopcount == 0) {
+		DEBUGPRINT(1, "Warning: Transmit buffer is not empty:\n");
+		DEBUGPRINT(1, " - Probably a failed flush operation [BUSON]\n");
+		return -1;
+	}
+	else {
+		return loopmax - loopcount;
+	}
 }
 
-
-static int waitForBusOn(int loopmax, VCanChanData *vChd)
+static int waitForBusOn(int loopmax, VCanChanData* vChd)
 /* Wait for bus on
  *
  * Waits a maximum of approximately loopmax ms for card to go bus on.
@@ -1917,775 +1951,769 @@ static int waitForBusOn(int loopmax, VCanChanData *vChd)
  * Never call with spinlock held or interrupts disabled.
  */
 {
-  int loopcount = loopmax;
+	int loopcount = loopmax;
 
-  // Wait until bus on is entered.
-  while (loopcount)
-  {
-    if ( pciCanRequestChipState(vChd) == VCAN_STAT_OK ) {
-      if( (vChd->chipState.state & CHIPSTAT_BUSOFF) != CHIPSTAT_BUSOFF ) {
-        break;
-      }
-    } else {
-      DEBUGPRINT(1, "Stat Failed\n");
-    }
+	// Wait until bus on is entered.
+	while (loopcount) {
+		if (pciCanRequestChipState(vChd) == VCAN_STAT_OK) {
+			if ((vChd->chipState.state & CHIPSTAT_BUSOFF) != CHIPSTAT_BUSOFF) {
+				break;
+			}
+		}
+		else {
+			DEBUGPRINT(1, "Stat Failed\n");
+		}
 
-    // Wait 1 ms for transceiver to reach bus on
-    set_current_state(TASK_UNINTERRUPTIBLE);
-    schedule_timeout(msecs_to_jiffies(1));
+		// Wait 1 ms for transceiver to reach bus on
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(msecs_to_jiffies(1));
 
-    if (vChd->vCard->cardPresent) {
-      --loopcount;
-    } else {
-      loopcount = 0;
-    }
-  }
+		if (vChd->vCard->cardPresent) {
+			--loopcount;
+		}
+		else {
+			loopcount = 0;
+		}
+	}
 
-  if ( loopcount == 0 ) {
-    DEBUGPRINT(1, "Bus on failed CH:%u\n", vChd->channel);
-    return -1;
-  } else {
-    DEBUGPRINT(4, "Bus on success CH:%u\n", vChd->channel);
-    return loopmax - loopcount;
-  }
+	if (loopcount == 0) {
+		DEBUGPRINT(1, "Bus on failed CH:%u\n", vChd->channel);
+		return -1;
+	}
+	else {
+		DEBUGPRINT(4, "Bus on success CH:%u\n", vChd->channel);
+		return loopmax - loopcount;
+	}
 }
 
 //======================================================================
 // Reading bus stats, only bus load is read
 //======================================================================
-static int pciCanReqBusStats (VCanChanData *vChan)
+static int pciCanReqBusStats(VCanChanData* vChan)
 {
-        PciCanChanData *hChd = vChan->hwChanData;
+	PciCanChanData* hChd = vChan->hwChanData;
 
-        vChan->busStats.busLoad = hChd->load;
+	vChan->busStats.busLoad = hChd->load;
 
-        return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 }
 
 //======================================================================
 //  Go bus on
 //======================================================================
 
-static int pciCanBusOn (VCanChanData *vChd)
+static int pciCanBusOn(VCanChanData* vChd)
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  unsigned long tmp;
-  unsigned long irqFlags;
-  int stat, loopmax;
+	PciCanChanData* hChd = vChd->hwChanData;
+	unsigned long tmp;
+	unsigned long irqFlags;
+	int stat, loopmax;
 
-  // Use mutex to allow this process to sleep
-  wait_for_completion(&hChd->busOnCompletion);
+	// Use mutex to allow this process to sleep
+	wait_for_completion(&hChd->busOnCompletion);
 
-  if ( vChd->isOnBus ) {
-    DEBUGPRINT(4, "Warning: Already on bus CH:%u\n",vChd->channel);
+	if (vChd->isOnBus) {
+		DEBUGPRINT(4, "Warning: Already on bus CH:%u\n", vChd->channel);
 
-    complete(&hChd->busOnCompletion);
+		complete(&hChd->busOnCompletion);
 
-    pciCanRequestChipState(vChd);
+		pciCanRequestChipState(vChd);
 
-    return VCAN_STAT_OK;
-  }
-  DEBUGPRINT(4,"BUS ON CH:%u\n",vChd->channel);
+		return VCAN_STAT_OK;
+	}
+	DEBUGPRINT(4, "BUS ON CH:%u\n", vChd->channel);
 
-  spin_lock_irqsave(&hChd->lock, irqFlags);
+	spin_lock_irqsave(&hChd->lock, irqFlags);
 
-  // Disables all interrupts
-  irqInit(hChd->canControllerBase);
+	// Disables all interrupts
+	irqInit(hChd->canControllerBase);
 
-  // Make sure that unit is in reset mode
-  tmp = IORD_PCIEFD_MOD(hChd->canControllerBase);
+	// Make sure that unit is in reset mode
+	tmp = IORD_PCIEFD_MOD(hChd->canControllerBase);
 
-  if ( !PCIEFD_MOD_RM_GET(tmp) ) {
-    DEBUGPRINT(4, "Warning: Reset mode not commanded before bus on\n");
+	if (!PCIEFD_MOD_RM_GET(tmp)) {
+		DEBUGPRINT(4, "Warning: Reset mode not commanded before bus on\n");
 
-    IOWR_PCIEFD_MOD(hChd->canControllerBase, tmp | PCIEFD_MOD_RM_MSK);
-  }
+		IOWR_PCIEFD_MOD(hChd->canControllerBase, tmp | PCIEFD_MOD_RM_MSK);
+	}
 
-  atomic_set(&hChd->outstanding_tx, 0);
+	atomic_set(&hChd->outstanding_tx, 0);
 
-  hChd->last_ts = 0;
-  hChd->compareTransId = 1;
-  hChd->lastTransId = 0;
+	hChd->last_ts = 0;
+	hChd->compareTransId = 1;
+	hChd->lastTransId = 0;
 
-  memset(hChd->current_tx_message, 0, sizeof(hChd->current_tx_message));
+	memset(hChd->current_tx_message, 0, sizeof(hChd->current_tx_message));
 
-  vChd->isOnBus = 1;
-  vChd->overrun = 0;
-  pciCanResetErrorCounter(vChd);
+	vChd->isOnBus = 1;
+	vChd->overrun = 0;
+	pciCanResetErrorCounter(vChd);
 
-  // Make sure that unit is in reset mode before starting flush
-  loopmax = 100; // Wait a maximum of 100 ms
-  stat = waitForIdleMode(loopmax, vChd);
+	// Make sure that unit is in reset mode before starting flush
+	loopmax = 100; // Wait a maximum of 100 ms
+	stat = waitForIdleMode(loopmax, vChd);
 
-  if ( stat < 0 ) {
-    tmp = IORD_PCIEFD_STAT(hChd->canControllerBase);
+	if (stat < 0) {
+		tmp = IORD_PCIEFD_STAT(hChd->canControllerBase);
 
-    DEBUGPRINT(3, "Timeout when waiting for idle state:\n");
-    DEBUGPRINT(3, " - reset mode commanded(%c) tx idle(%c) in reset mode(%c) [BUS ON]\n",
-               statResetRequest(hChd->canControllerBase)    ? 'x' : ' ',
-               statTransmitterIdle(hChd->canControllerBase) ? 'x' : ' ',
-               statInResetMode(hChd->canControllerBase)     ? 'x' : ' '
-               );
-  }
+		DEBUGPRINT(3, "Timeout when waiting for idle state:\n");
+		DEBUGPRINT(3,
+		           " - reset mode commanded(%c) tx idle(%c) in reset mode(%c) "
+		           "[BUS ON]\n",
+		           statResetRequest(hChd->canControllerBase) ? 'x' : ' ',
+		           statTransmitterIdle(hChd->canControllerBase) ? 'x' : ' ',
+		           statInResetMode(hChd->canControllerBase) ? 'x' : ' ');
+	}
 
-  // Clear abort done irq flag
-  IOWR_PCIEFD_IRQ(hChd->canControllerBase, PCIEFD_IRQ_ABD_MSK);
+	// Clear abort done irq flag
+	IOWR_PCIEFD_IRQ(hChd->canControllerBase, PCIEFD_IRQ_ABD_MSK);
 
-  // Clear RXERR, TXERR and Flush buffers
-  // * This command will reset the CAN controller. When the reset is done a
-  //   status packet will be placed in the receiver buffer. The status packet
-  //   will have the associated command sequence number and the init detected
-  //   bit set.
-  fpgaFlushAll(hChd->canControllerBase, 0);
+	// Clear RXERR, TXERR and Flush buffers
+	// * This command will reset the CAN controller. When the reset is done a
+	//   status packet will be placed in the receiver buffer. The status packet
+	//   will have the associated command sequence number and the init detected
+	//   bit set.
+	fpgaFlushAll(hChd->canControllerBase, 0);
 
-  // Wait for abort done signal
-  loopmax = 100; // Wait a maximum of 100 ms
-  stat = waitForAbort(loopmax, vChd);
+	// Wait for abort done signal
+	loopmax = 100; // Wait a maximum of 100 ms
+	stat = waitForAbort(loopmax, vChd);
 
-  // Wait for flush to finish
-  loopmax = 10; // Wait a maximum of 10 ms
-  stat = waitForFlush(loopmax, vChd);
+	// Wait for flush to finish
+	loopmax = 10; // Wait a maximum of 10 ms
+	stat = waitForFlush(loopmax, vChd);
 
-  // Write a flush recovery control word
-  IOWR_PCIEFD_CONTROL(hChd->canControllerBase, PCIEFD_CONTROL_END_FLUSH);
+	// Write a flush recovery control word
+	IOWR_PCIEFD_CONTROL(hChd->canControllerBase, PCIEFD_CONTROL_END_FLUSH);
 
-  // Enable bus load packets
-  IOWR_PCIEFD_BLP(hChd->canControllerBase, hChd->bus_load_prescaler);
+	// Enable bus load packets
+	IOWR_PCIEFD_BLP(hChd->canControllerBase, hChd->bus_load_prescaler);
 
-  if (OPEN_AS_CANFD_NONISO == vChd->openMode) {
-    enableNonIsoMode(hChd->canControllerBase);
-  }
-  else if (OPEN_AS_CANFD_ISO == vChd->openMode) {
-    disableNonIsoMode(hChd->canControllerBase);
-  }
+	if (OPEN_AS_CANFD_NONISO == vChd->openMode) {
+		enableNonIsoMode(hChd->canControllerBase);
+	}
+	else if (OPEN_AS_CANFD_ISO == vChd->openMode) {
+		disableNonIsoMode(hChd->canControllerBase);
+	}
 
-  tmp = IORD_PCIEFD_MOD(hChd->canControllerBase);
+	tmp = IORD_PCIEFD_MOD(hChd->canControllerBase);
 
-  if (OPEN_AS_CAN == vChd->openMode) {
-    tmp |= PCIEFD_MOD_CLASSIC(1);
-  } else {
-    tmp &= ~PCIEFD_MOD_CLASSIC_MSK;
-  }
+	if (OPEN_AS_CAN == vChd->openMode) {
+		tmp |= PCIEFD_MOD_CLASSIC(1);
+	}
+	else {
+		tmp &= ~PCIEFD_MOD_CLASSIC_MSK;
+	}
 
-  IOWR_PCIEFD_MOD(hChd->canControllerBase, tmp & ~PCIEFD_MOD_RM_MSK );
+	IOWR_PCIEFD_MOD(hChd->canControllerBase, tmp & ~PCIEFD_MOD_RM_MSK);
 
+	irqEnableTransmitterError(hChd->canControllerBase);
 
-  irqEnableTransmitterError(hChd->canControllerBase);
+	vChd->chipState.state = CHIPSTAT_ERROR_ACTIVE;
 
-  vChd->chipState.state = CHIPSTAT_ERROR_ACTIVE;
+	spin_unlock_irq(&hChd->lock);
 
-  spin_unlock_irq(&hChd->lock);
+	// Wait for bus on
+	loopmax = 1000; // Wait a maximum of 1000 ms
+	stat = waitForBusOn(loopmax, vChd);
 
-  // Wait for bus on
-  loopmax = 1000; // Wait a maximum of 1000 ms
-  stat = waitForBusOn(loopmax, vChd);
+	spin_lock_irq(&hChd->lock);
 
-  spin_lock_irq(&hChd->lock);
+	ledOn(hChd->canControllerBase);
 
-  ledOn(hChd->canControllerBase);
+	spin_unlock_irqrestore(&hChd->lock, irqFlags);
 
-  spin_unlock_irqrestore(&hChd->lock, irqFlags);
+	complete(&hChd->busOnCompletion);
 
-  complete(&hChd->busOnCompletion);
-
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 } // pciCanBusOn
-
 
 //======================================================================
 //  Go bus off
 //======================================================================
-static int pciCanBusOff (VCanChanData *vChd)
+static int pciCanBusOff(VCanChanData* vChd)
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  unsigned long tmp;
-  unsigned long irqFlags;
-  int stat, loopmax;
+	PciCanChanData* hChd = vChd->hwChanData;
+	unsigned long tmp;
+	unsigned long irqFlags;
+	int stat, loopmax;
 
-  wait_for_completion(&hChd->busOnCompletion);
+	wait_for_completion(&hChd->busOnCompletion);
 
-  DEBUGPRINT(4, "BUS OFF CH:%u\n", vChd->channel);
+	DEBUGPRINT(4, "BUS OFF CH:%u\n", vChd->channel);
 
-  // Since we are bus off we have no messages *on the way*
-  atomic_set(&hChd->outstanding_tx, 0);
+	// Since we are bus off we have no messages *on the way*
+	atomic_set(&hChd->outstanding_tx, 0);
 
-  spin_lock_irqsave(&hChd->lock, irqFlags);
+	spin_lock_irqsave(&hChd->lock, irqFlags);
 
-  vChd->isOnBus = 0;
-  vChd->overrun = 0;
+	vChd->isOnBus = 0;
+	vChd->overrun = 0;
 
-  memset(hChd->current_tx_message, 0, sizeof(hChd->current_tx_message));
+	memset(hChd->current_tx_message, 0, sizeof(hChd->current_tx_message));
 
-  queue_reinit(&vChd->txChanQueue);
+	queue_reinit(&vChd->txChanQueue);
 
-  tmp = IORD_PCIEFD_MOD(hChd->canControllerBase);
+	tmp = IORD_PCIEFD_MOD(hChd->canControllerBase);
 
-  IOWR_PCIEFD_MOD(hChd->canControllerBase, tmp | PCIEFD_MOD_RM_MSK);
+	IOWR_PCIEFD_MOD(hChd->canControllerBase, tmp | PCIEFD_MOD_RM_MSK);
 
-  // Make sure that unit is in reset mode before starting flush
-  loopmax = 100;
-  stat = waitForIdleMode(loopmax, vChd);
+	// Make sure that unit is in reset mode before starting flush
+	loopmax = 100;
+	stat = waitForIdleMode(loopmax, vChd);
 
-  if ( stat < 0 ) {
-    tmp = IORD_PCIEFD_STAT(hChd->canControllerBase);
+	if (stat < 0) {
+		tmp = IORD_PCIEFD_STAT(hChd->canControllerBase);
 
-    DEBUGPRINT(3, "Timeout when waiting for idle state:\n");
-    DEBUGPRINT(3, " - reset mode commanded(%c) tx idle(%c) in reset mode(%c) [BUS OFF]\n",
-               statResetRequest(hChd->canControllerBase)    ? 'x' : ' ',
-               statTransmitterIdle(hChd->canControllerBase) ? 'x' : ' ',
-               statInResetMode(hChd->canControllerBase)     ? 'x' : ' '
-               );
-  }
+		DEBUGPRINT(3, "Timeout when waiting for idle state:\n");
+		DEBUGPRINT(3,
+		           " - reset mode commanded(%c) tx idle(%c) in reset mode(%c) "
+		           "[BUS OFF]\n",
+		           statResetRequest(hChd->canControllerBase) ? 'x' : ' ',
+		           statTransmitterIdle(hChd->canControllerBase) ? 'x' : ' ',
+		           statInResetMode(hChd->canControllerBase) ? 'x' : ' ');
+	}
 
-  // Disable bus load packets
-  IOWR_PCIEFD_BLP(hChd->canControllerBase, 0);
+	// Disable bus load packets
+	IOWR_PCIEFD_BLP(hChd->canControllerBase, 0);
 
-  ledOff(hChd->canControllerBase);
+	ledOff(hChd->canControllerBase);
 
-  spin_unlock_irqrestore(&hChd->lock, irqFlags);
+	spin_unlock_irqrestore(&hChd->lock, irqFlags);
 
-  complete(&hChd->busOnCompletion);
+	complete(&hChd->busOnCompletion);
 
-  pciCanRequestChipState(vChd);
+	pciCanRequestChipState(vChd);
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 } // pciCanBusOff
-
 
 //======================================================================
 //  Enable/disable interrupts on card
 //======================================================================
-static void pciCanInterrupts (VCanCardData *vCard, int enable)
+static void pciCanInterrupts(VCanCardData* vCard, int enable)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  unsigned long irqFlags;
+	PciCanCardData* hCard = vCard->hwCardData;
+	unsigned long irqFlags;
 
-  // The card must be present!
-  if (!vCard->cardPresent) {
-    return;
-  }
+	// The card must be present!
+	if (!vCard->cardPresent) {
+		return;
+	}
 
-  spin_lock_irqsave(&hCard->lock, irqFlags);
+	spin_lock_irqsave(&hCard->lock, irqFlags);
 
-  // Disable/enable interrupts from card
-  if (enable) {
-    DEBUGPRINT(3,"Enable interrupts:%08x\n",ALL_INTERRUPT_SOURCES_MSK);
-    IOWR_PCIE_IEN(hCard->pcie, ALL_INTERRUPT_SOURCES_MSK);
-  }else{
-    DEBUGPRINT(3,"Disable interrupts\n");
-    IOWR_PCIE_IEN(hCard->pcie, 0);
-  }
+	// Disable/enable interrupts from card
+	if (enable) {
+		DEBUGPRINT(3, "Enable interrupts:%08x\n", ALL_INTERRUPT_SOURCES_MSK);
+		IOWR_PCIE_IEN(hCard->pcie, ALL_INTERRUPT_SOURCES_MSK);
+	}
+	else {
+		DEBUGPRINT(3, "Disable interrupts\n");
+		IOWR_PCIE_IEN(hCard->pcie, 0);
+	}
 
-  spin_unlock_irqrestore(&hCard->lock, irqFlags);
+	spin_unlock_irqrestore(&hCard->lock, irqFlags);
 }
-
 
 //======================================================================
 // Process status packet information
 //======================================================================
-static void updateChipState(VCanChanData *vChd)
+static void updateChipState(VCanChanData* vChd)
 {
-  PciCanChanData *hChd  = vChd->hwChanData;
-  VCanCardData *vCard = vChd->vCard;
-  PciCanCardData *hCard = vCard->hwCardData;
-  pciefd_packet_t *packet = &hCard->packet;
+	PciCanChanData* hChd = vChd->hwChanData;
+	VCanCardData* vCard = vChd->vCard;
+	PciCanCardData* hCard = vCard->hwCardData;
+	pciefd_packet_t* packet = &hCard->packet;
 
-  vChd->chipState.txerr = getTransmitErrorCount(packet);
-  vChd->chipState.rxerr = getReceiveErrorCount(packet);
+	vChd->chipState.txerr = getTransmitErrorCount(packet);
+	vChd->chipState.rxerr = getReceiveErrorCount(packet);
 
-  if ( statusBusOff(packet) && statusErrorPassive(packet) ) {
-      DEBUGPRINT(5,"Is bus off due tx error == 256 (BOFF=1), and Error Passive\n");
-      vChd->chipState.state = CHIPSTAT_BUSOFF | CHIPSTAT_ERROR_PASSIVE | CHIPSTAT_ERROR_WARNING;
-  }
-  else if ( statusBusOff(packet) ) {
-    DEBUGPRINT(5,"Is bus off due to tx error == 256 (BOFF=1)\n");
-    vChd->chipState.state = CHIPSTAT_BUSOFF;
-  }
-  else if ( statusInResetMode(packet) ) {
-    DEBUGPRINT(5,"Is bus off in reset mode (BOFF=0)\n");
-    vChd->chipState.state = CHIPSTAT_BUSOFF;
-  }
-  else if ( statusErrorPassive(packet) ) {
-    DEBUGPRINT(5,"Error Passive Limit Reached\n");
-    vChd->chipState.state = CHIPSTAT_ERROR_PASSIVE | CHIPSTAT_ERROR_WARNING;
-  }
-  // Warning level is disabled. See FB 16545 for info.
-  /* else if ( statusErrorWarning(packet) ) { */
-  /*   DEBUGPRINT(5,"Error Warning Limit Reached\n"); */
-  /*   vChd->chipState.state = CHIPSTAT_ERROR_WARNING; */
-  /* } */
-  else {
-    DEBUGPRINT(5,"Bus on\n");
-    vChd->chipState.state = CHIPSTAT_ERROR_ACTIVE;
-  }
+	if (statusBusOff(packet) && statusErrorPassive(packet)) {
+		DEBUGPRINT(
+		        5,
+		        "Is bus off due tx error == 256 (BOFF=1), and Error Passive\n");
+		vChd->chipState.state = CHIPSTAT_BUSOFF | CHIPSTAT_ERROR_PASSIVE |
+		                        CHIPSTAT_ERROR_WARNING;
+	}
+	else if (statusBusOff(packet)) {
+		DEBUGPRINT(5, "Is bus off due to tx error == 256 (BOFF=1)\n");
+		vChd->chipState.state = CHIPSTAT_BUSOFF;
+	}
+	else if (statusInResetMode(packet)) {
+		DEBUGPRINT(5, "Is bus off in reset mode (BOFF=0)\n");
+		vChd->chipState.state = CHIPSTAT_BUSOFF;
+	}
+	else if (statusErrorPassive(packet)) {
+		DEBUGPRINT(5, "Error Passive Limit Reached\n");
+		vChd->chipState.state = CHIPSTAT_ERROR_PASSIVE | CHIPSTAT_ERROR_WARNING;
+	}
+	// Warning level is disabled. See FB 16545 for info.
+	/* else if ( statusErrorWarning(packet) ) { */
+	/*   DEBUGPRINT(5,"Error Warning Limit Reached\n"); */
+	/*   vChd->chipState.state = CHIPSTAT_ERROR_WARNING; */
+	/* } */
+	else {
+		DEBUGPRINT(5, "Bus on\n");
+		vChd->chipState.state = CHIPSTAT_ERROR_ACTIVE;
+	}
 
-  if ( statusOverflow(packet) ) {
-    DEBUGPRINT(5,"Receive Buffer Overrun Error\n");
-    hChd->overrun_occured = 1;
-  }
+	if (statusOverflow(packet)) {
+		DEBUGPRINT(5, "Receive Buffer Overrun Error\n");
+		hChd->overrun_occured = 1;
+	}
 }
 
 //======================================================================
 //  Timeout handler for the waitResponse below
 //======================================================================
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
-static void errorRestart (unsigned long data)
+static void errorRestart(unsigned long data)
 {
-  PciCanChanData *hChd = (PciCanChanData *)data;
+	PciCanChanData* hChd = (PciCanChanData*) data;
 #else
-static void errorRestart (struct timer_list *t)
+static void errorRestart(struct timer_list* t)
 {
-  PciCanChanData *hChd = from_timer(hChd, t, errorDisableTimer);
+	PciCanChanData* hChd = from_timer(hChd, t, errorDisableTimer);
 #endif /* KERNEL_VERSION < 4.15.0 */
-  unsigned long irqFlags;
+	unsigned long irqFlags;
 
-  spin_lock_irqsave(&hChd->lock, irqFlags);
+	spin_lock_irqsave(&hChd->lock, irqFlags);
 
-  enableErrorPackets(hChd->canControllerBase);
+	enableErrorPackets(hChd->canControllerBase);
 
-  spin_unlock_irqrestore(&hChd->lock, irqFlags);
+	spin_unlock_irqrestore(&hChd->lock, irqFlags);
 
-  hChd->vChan->errorCount = 0;
+	hChd->vChan->errorCount = 0;
 
-  DEBUGPRINT(4,"Reenable error packets CH:%u\n", hChd->vChan->channel);
+	DEBUGPRINT(4, "Reenable error packets CH:%u\n", hChd->vChan->channel);
 }
-
 
 //======================================================================
 //
 //======================================================================
-static void receivedPacketHandler (VCanCardData *vCard)
+static void receivedPacketHandler(VCanCardData* vCard)
 {
-  int r;
-  unsigned long irqFlags;
-  VCAN_EVENT e;
-  PciCanCardData *hCard = vCard->hwCardData;
-  pciefd_packet_t *packet = &hCard->packet;
-  int chid = packetChannelId(packet);
-  VCanChanData *vChd;
-  PciCanChanData *hChd;
+	int r;
+	unsigned long irqFlags;
+	VCAN_EVENT e;
+	PciCanCardData* hCard = vCard->hwCardData;
+	pciefd_packet_t* packet = &hCard->packet;
+	int chid = packetChannelId(packet);
+	VCanChanData* vChd;
+	PciCanChanData* hChd;
 
-  // Get time stamp when message is processed
-  uint64_t sw_ts = pciCanHwTime(vCard);
+	// Get time stamp when message is processed
+	uint64_t sw_ts = pciCanHwTime(vCard);
 
-  if(chid >= vCard->nrChannels) {
-    DEBUGPRINT(1,"Invalid channel id %u\n",chid);
-    return;
-  }
+	if (chid >= vCard->nrChannels) {
+		DEBUGPRINT(1, "Invalid channel id %u\n", chid);
+		return;
+	}
 
-  vChd = vCard->chanData[chid];
-  hChd = vChd->hwChanData;
+	vChd = vCard->chanData[chid];
+	hChd = vChd->hwChanData;
 
-  if ( packet->timestamp )
-    {
-      if ( sw_ts < packet->timestamp )
-        {
-          DEBUGPRINT(1,"ts error, sw:%llu packet:%llu\n", sw_ts, packet->timestamp);
-          hChd->debug.ts_error_cnt++;
-        }
-      else
-        {
-          uint64_t ts_diff;
+	if (packet->timestamp) {
+		if (sw_ts < packet->timestamp) {
+			DEBUGPRINT(1, "ts error, sw:%llu packet:%llu\n", sw_ts,
+			           packet->timestamp);
+			hChd->debug.ts_error_cnt++;
+		}
+		else {
+			uint64_t ts_diff;
 
-          ts_diff = sw_ts - packet->timestamp;
+			ts_diff = sw_ts - packet->timestamp;
 
-          hChd->debug.avg_ts_diff += ts_diff;
-          ++hChd->debug.avg_ts_diff_cnt;
+			hChd->debug.avg_ts_diff += ts_diff;
+			++hChd->debug.avg_ts_diff_cnt;
 
-          if( ts_diff > hChd->debug.max_ts_diff ){
-            hChd->debug.max_ts_diff = ts_diff;
-          }
-        }
+			if (ts_diff > hChd->debug.max_ts_diff) {
+				hChd->debug.max_ts_diff = ts_diff;
+			}
+		}
 
-      if ( hCard->last_ts >= packet->timestamp )
-        {
-          DEBUGPRINT(5,"ts wrong order, last:%llu packet:%llu\n", hCard->last_ts, packet->timestamp);
+		if (hCard->last_ts >= packet->timestamp) {
+			DEBUGPRINT(5, "ts wrong order, last:%llu packet:%llu\n",
+			           hCard->last_ts, packet->timestamp);
 
-          hChd->debug.ts_wrong_order_cnt++;
-        }
+			hChd->debug.ts_wrong_order_cnt++;
+		}
 
-      if ( hChd->last_ts >= packet->timestamp )
-        {
-          DEBUGPRINT(1,"ts wrong order, last:%llu packet:%llu\n", hChd->last_ts, packet->timestamp);
+		if (hChd->last_ts >= packet->timestamp) {
+			DEBUGPRINT(1, "ts wrong order, last:%llu packet:%llu\n",
+			           hChd->last_ts, packet->timestamp);
 
-          hChd->debug.ts_wrong_order_cnt++;
-        }
+			hChd->debug.ts_wrong_order_cnt++;
+		}
 
-      hCard->last_ts = packet->timestamp;
-    }
+		hCard->last_ts = packet->timestamp;
+	}
 
-  // +----------------------------------------------------------------------
-  // | Delay packet
-  // +----------------------------------------------------------------------
-  if( isDelayPacket(packet) )
-    {
-      int delay;
-      DEBUGPRINT(3,"Delay packet\n");
-      return;
+	// +----------------------------------------------------------------------
+	// | Delay packet
+	// +----------------------------------------------------------------------
+	if (isDelayPacket(packet)) {
+		int delay;
+		DEBUGPRINT(3, "Delay packet\n");
+		return;
 
-      delay = PCIEFD_DELAY_GET(packet->id);
+		delay = PCIEFD_DELAY_GET(packet->id);
 
-      if( (delay >= 0) && (delay < 60) )
-        {
-          int suboffset=PCIEFD_DELAY_HS_STOP_GET(packet->id)-PCIEFD_DELAY_HS_START_GET(packet->id);
-          int index = delay*8+suboffset;
+		if ((delay >= 0) && (delay < 60)) {
+			int suboffset = PCIEFD_DELAY_HS_STOP_GET(packet->id) -
+			                PCIEFD_DELAY_HS_START_GET(packet->id);
+			int index = delay * 8 + suboffset;
 
-          if((index >= 0) && (index < 60*8))
-            hChd->delay_vec[index] += 1;
-        }
-    }
-  // +----------------------------------------------------------------------
-  // | Status packet
-  // +----------------------------------------------------------------------
-  else if( isStatusPacket(packet) )
-    {
-      // Copy command and wakeup those who are waiting for this reply.
-      struct list_head *currHead, *tmpHead;
-      WaitNode *currNode;
+			if ((index >= 0) && (index < 60 * 8))
+				hChd->delay_vec[index] += 1;
+		}
+	}
+	// +----------------------------------------------------------------------
+	// | Status packet
+	// +----------------------------------------------------------------------
+	else if (isStatusPacket(packet)) {
+		// Copy command and wakeup those who are waiting for this reply.
+		struct list_head *currHead, *tmpHead;
+		WaitNode* currNode;
 
-      DEBUGPRINT(4,"CH:%u Status (%x)\n",chid, packet->id);
+		DEBUGPRINT(4, "CH:%u Status (%x)\n", chid, packet->id);
 
-      updateChipState(vChd);
+		updateChipState(vChd);
 
-      hChd->debug.received_status++;
+		hChd->debug.received_status++;
 
-      e.tag                              = V_CHIP_STATE;
-      e.timeStamp                        = timestamp_to_ticks(vCard, packet->timestamp);
-      e.transId                          = 0;
-      e.tagData.chipState.busStatus      = (unsigned char)vChd->chipState.state;
-      e.tagData.chipState.txErrorCounter = (unsigned char)vChd->chipState.txerr;
-      e.tagData.chipState.rxErrorCounter = (unsigned char)vChd->chipState.rxerr;
-      vCanDispatchEvent(vChd, &e);
+		e.tag = V_CHIP_STATE;
+		e.timeStamp = timestamp_to_ticks(vCard, packet->timestamp);
+		e.transId = 0;
+		e.tagData.chipState.busStatus = (unsigned char) vChd->chipState.state;
+		e.tagData.chipState.txErrorCounter =
+		        (unsigned char) vChd->chipState.txerr;
+		e.tagData.chipState.rxErrorCounter =
+		        (unsigned char) vChd->chipState.rxerr;
+		vCanDispatchEvent(vChd, &e);
 
-      read_lock_irqsave(&hCard->replyWaitListLock, irqFlags);
+		read_lock_irqsave(&hCard->replyWaitListLock, irqFlags);
 
-      list_for_each_safe(currHead, tmpHead, &hCard->replyWaitList) {
-        currNode = list_entry(currHead, WaitNode, list);
-        if (currNode->cmdNr == chid) {
-          int diff;
+		list_for_each_safe(currHead, tmpHead, &hCard->replyWaitList)
+		{
+			currNode = list_entry(currHead, WaitNode, list);
+			if (currNode->cmdNr == chid) {
+				int diff;
 
-          diff = statusCmdSeqNo(packet) - currNode->transId;
+				diff = statusCmdSeqNo(packet) - currNode->transId;
 
-          if (statusCmdSeqNo(packet) == currNode->transId) {
-            complete(&currNode->waitCompletion);
-            DEBUGPRINT(4,"Matching TID diff:%d\n",diff);
-          } else {
-            DEBUGPRINT(4,"Not Matching TID: got %u, expected %u diff:%d\n",
-                       statusCmdSeqNo(packet), currNode->transId, diff);
-          }
-        }
-      }
+				if (statusCmdSeqNo(packet) == currNode->transId) {
+					complete(&currNode->waitCompletion);
+					DEBUGPRINT(4, "Matching TID diff:%d\n", diff);
+				}
+				else {
+					DEBUGPRINT(
+					        4,
+					        "Not Matching TID: got %u, expected %u diff:%d\n",
+					        statusCmdSeqNo(packet), currNode->transId, diff);
+				}
+			}
+		}
 
-      read_unlock_irqrestore(&hCard->replyWaitListLock, irqFlags);
-    }
-  // +----------------------------------------------------------------------
-  // | Error packet
-  // +----------------------------------------------------------------------
-  else if ( isErrorPacket(packet) )
-    {
-      VCAN_EVENT e;
-      int error_code = packet->control & (EPACKET_TYPE_MSK | EPACKET_SEG_MSK | EPACKET_SEG2_MSK | EPACKET_DIR_MSK);
+		read_unlock_irqrestore(&hCard->replyWaitListLock, irqFlags);
+	}
+	// +----------------------------------------------------------------------
+	// | Error packet
+	// +----------------------------------------------------------------------
+	else if (isErrorPacket(packet)) {
+		VCAN_EVENT e;
+		int error_code = packet->control & (EPACKET_TYPE_MSK | EPACKET_SEG_MSK |
+		                                    EPACKET_SEG2_MSK | EPACKET_DIR_MSK);
 
-      ++hChd->debug.err_packet_count;
-      updateChipState(vChd);
+		++hChd->debug.err_packet_count;
+		updateChipState(vChd);
 
-      vChd->errorCount++;
+		vChd->errorCount++;
 
-      DEBUGPRINT(4,"CH:%u Error status: Txerr(%u) Rxerr(%u)\n",
-                 chid,
-                 vChd->chipState.txerr,
-                 vChd->chipState.rxerr);
-      DEBUGPRINT(4, "CH:%u ErrorCount(%u)\n", chid, vChd->errorCount);
+		DEBUGPRINT(4, "CH:%u Error status: Txerr(%u) Rxerr(%u)\n", chid,
+		           vChd->chipState.txerr, vChd->chipState.rxerr);
+		DEBUGPRINT(4, "CH:%u ErrorCount(%u)\n", chid, vChd->errorCount);
 
-      if (vChd->errorCount == MAX_ERROR_COUNT) {
+		if (vChd->errorCount == MAX_ERROR_COUNT) {
+			spin_lock_irqsave(&hChd->lock, irqFlags);
+			disableErrorPackets(hChd->canControllerBase);
+			spin_unlock_irqrestore(&hChd->lock, irqFlags);
 
-        spin_lock_irqsave(&hChd->lock, irqFlags);
-        disableErrorPackets(hChd->canControllerBase);
-        spin_unlock_irqrestore(&hChd->lock, irqFlags);
+			DEBUGPRINT(4, "Disable error packets CH:%u\n", chid);
 
-        DEBUGPRINT(4,"Disable error packets CH:%u\n", chid);
-
-        // Set a timer to restart interrupts
+			// Set a timer to restart interrupts
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
-        init_timer(&hChd->errorDisableTimer);
-        hChd->errorDisableTimer.function = errorRestart;
-        hChd->errorDisableTimer.data = (unsigned long)hChd;
+			init_timer(&hChd->errorDisableTimer);
+			hChd->errorDisableTimer.function = errorRestart;
+			hChd->errorDisableTimer.data = (unsigned long) hChd;
 #else
-        timer_setup(&hChd->errorDisableTimer, errorRestart, 0);
+			timer_setup(&hChd->errorDisableTimer, errorRestart, 0);
 #endif /* KERNEL_VERSION < 4.15.0 */
-        hChd->errorDisableTimer.expires = jiffies + msecs_to_jiffies(ERROR_DISABLE_TIME_MS);
-        add_timer(&hChd->errorDisableTimer);
-      }
-      else if (vChd->errorCount < MAX_ERROR_COUNT) {
-        DEBUGPRINT(5, "Bus error code: 0x%02x\n isErrorPassive:%u\n",
-                   error_code, (vChd->chipState.state & CHIPSTAT_ERROR_PASSIVE) != 0);
+			hChd->errorDisableTimer.expires =
+			        jiffies + msecs_to_jiffies(ERROR_DISABLE_TIME_MS);
+			add_timer(&hChd->errorDisableTimer);
+		}
+		else if (vChd->errorCount < MAX_ERROR_COUNT) {
+			DEBUGPRINT(5, "Bus error code: 0x%02x\n isErrorPassive:%u\n",
+			           error_code,
+			           (vChd->chipState.state & CHIPSTAT_ERROR_PASSIVE) != 0);
 
-        e.tag                = V_RECEIVE_MSG;
-        e.timeStamp          = timestamp_to_ticks(vCard, packet->timestamp);
-        e.transId            = 0;
-        e.tagData.msg.id     = 0;
-        e.tagData.msg.flags  = VCAN_MSG_FLAG_ERROR_FRAME;
-        e.tagData.msg.dlc    = 0;
-        vCanDispatchEvent(vChd, &e);
-      }
-      else {
-        DEBUGPRINT(5,"Error status blocked\n");
-      }
-    }
-  // +----------------------------------------------------------------------
-  // | TXACK | Error frame ack
-  // +----------------------------------------------------------------------
-  else if ( isAckPacket(packet) || isEFrameAckPacket(packet))
-    {
-      unsigned int transId = getAckSeqNo(packet);
-      int isAck = 0;
+			e.tag = V_RECEIVE_MSG;
+			e.timeStamp = timestamp_to_ticks(vCard, packet->timestamp);
+			e.transId = 0;
+			e.tagData.msg.id = 0;
+			e.tagData.msg.flags = VCAN_MSG_FLAG_ERROR_FRAME;
+			e.tagData.msg.dlc = 0;
+			vCanDispatchEvent(vChd, &e);
+		}
+		else {
+			DEBUGPRINT(5, "Error status blocked\n");
+		}
+	}
+	// +----------------------------------------------------------------------
+	// | TXACK | Error frame ack
+	// +----------------------------------------------------------------------
+	else if (isAckPacket(packet) || isEFrameAckPacket(packet)) {
+		unsigned int transId = getAckSeqNo(packet);
+		int isAck = 0;
 
-      if (isAckPacket(packet))
-        {
-          DEBUGPRINT(4,"CH:%u Ack Packet, ID %u, Outstanding %d\n",
-                     chid, transId, atomic_read(&hChd->outstanding_tx));
-          isAck = 1;
-        }
-      else
-        {
-          DEBUGPRINT(4,"CH:%u Error frame ack Packet, ID %u, Outstanding %d\n",
-                     chid, transId, atomic_read(&hChd->outstanding_tx));
-        }
+		if (isAckPacket(packet)) {
+			DEBUGPRINT(4, "CH:%u Ack Packet, ID %u, Outstanding %d\n", chid,
+			           transId, atomic_read(&hChd->outstanding_tx));
+			isAck = 1;
+		}
+		else {
+			DEBUGPRINT(4,
+			           "CH:%u Error frame ack Packet, ID %u, Outstanding %d\n",
+			           chid, transId, atomic_read(&hChd->outstanding_tx));
+		}
 
+		if (isFlushed(packet)) // Got flushed packet, do nothing.
+		{
+			DEBUGPRINT(4, "Ack was flushed, ID %u\n", transId);
+		}
+		else if ((transId == 0) || (transId > MAX_OUTSTANDING_TX)) {
+			DEBUGPRINT(3, "CMD_TX_ACKNOWLEDGE chan %d ERROR transid %d\n", chid,
+			           transId);
+		}
+		else {
+			VCAN_EVENT* e =
+			        (VCAN_EVENT*) &hChd->current_tx_message[transId - 1];
+			e->tag = V_RECEIVE_MSG;
+			e->timeStamp = timestamp_to_ticks(vCard, packet->timestamp);
+			e->tagData.msg.flags &= ~VCAN_MSG_FLAG_TXRQ;
+			e->tagData.msg.flags |= VCAN_MSG_FLAG_TXACK;
 
-      if(isFlushed(packet)) // Got flushed packet, do nothing.
-        {
-          DEBUGPRINT(4,"Ack was flushed, ID %u\n",transId);
-        }
-      else if ((transId == 0) || (transId > MAX_OUTSTANDING_TX))
-        {
-          DEBUGPRINT(3, "CMD_TX_ACKNOWLEDGE chan %d ERROR transid %d\n", chid, transId);
-        }
-      else
-        {
-          VCAN_EVENT *e = (VCAN_EVENT *)&hChd->current_tx_message[transId - 1];
-          e->tag       = V_RECEIVE_MSG;
-          e->timeStamp = timestamp_to_ticks(vCard, packet->timestamp);
-          e->tagData.msg.flags &= ~VCAN_MSG_FLAG_TXRQ;
-          e->tagData.msg.flags |= VCAN_MSG_FLAG_TXACK;
+			if (isAck && isNack(packet)) {
+				if (isABL(packet)) {
+					e->tagData.msg.flags |= VCAN_MSG_FLAG_SSM_NACK_ABL;
+				}
+				else {
+					e->tagData.msg.flags |= VCAN_MSG_FLAG_SSM_NACK;
+				}
+			}
 
-          if (isAck && isNack(packet)) {
+			vCanDispatchEvent(vChd, e);
 
-            if (isABL(packet)) {
-              e->tagData.msg.flags |= VCAN_MSG_FLAG_SSM_NACK_ABL;
-            } else {
-              e->tagData.msg.flags |= VCAN_MSG_FLAG_SSM_NACK;
-            }
-          }
+			hChd->current_tx_message[transId - 1].user_data = 0;
 
-          vCanDispatchEvent(vChd, e);
+			// Wake up those who are waiting for all sending to finish
+			if (atomic_add_unless(&hChd->outstanding_tx, -1, 0)) {
+				// Is anyone waiting for this ack?
+				if ((atomic_read(&hChd->outstanding_tx) == 0) &&
+				    queue_empty(&vChd->txChanQueue) &&
+				    test_and_clear_bit(0, &vChd->waitEmpty)) {
+					wake_up_interruptible(&vChd->flushQ);
+				}
+				if (!queue_empty(&vChd->txChanQueue)) {
+					pciCanRequestSend(vCard, vChd);
+				}
+				else {
+					DEBUGPRINT(4, "Queue empty\n");
+				}
+			}
+			else {
+				DEBUGPRINT(4, "TX ACK when not waiting for one\n");
+			}
+			++hChd->debug.ack_packet_count;
+		}
+	}
+	// +----------------------------------------------------------------------
+	// | TXRQ Packet
+	// +----------------------------------------------------------------------
+	else if (isTxrqPacket(packet)) {
+		unsigned int transId = getTxrqSeqNo(packet);
 
-          hChd->current_tx_message[transId - 1].user_data = 0;
+		DEBUGPRINT(3, "### Txrq packet : chan(%u) seq no(%u)\n", chid, transId);
 
-          // Wake up those who are waiting for all sending to finish
-          if (atomic_add_unless(&hChd->outstanding_tx, -1, 0)) {
-            // Is anyone waiting for this ack?
-            if ( (atomic_read(&hChd->outstanding_tx) == 0)
-                 && queue_empty(&vChd->txChanQueue)
-                 && test_and_clear_bit(0, &vChd->waitEmpty) )
-              {
-                wake_up_interruptible(&vChd->flushQ);
-              }
-            if (!queue_empty(&vChd->txChanQueue))
-              {
-                pciCanRequestSend(vCard, vChd);
-              } else {
-              DEBUGPRINT(4, "Queue empty\n");
-            }
-          }
-          else
-            {
-              DEBUGPRINT(4, "TX ACK when not waiting for one\n");
-            }
-          ++hChd->debug.ack_packet_count;
-        }
-    }
-  // +----------------------------------------------------------------------
-  // | TXRQ Packet
-  // +----------------------------------------------------------------------
-  else if ( isTxrqPacket(packet) )
-    {
-      unsigned int transId = getTxrqSeqNo(packet);
+		// A TxReq. Take the current tx message, modify it to a
+		// receive message and send it back.
 
-      DEBUGPRINT(3,"### Txrq packet : chan(%u) seq no(%u)\n", chid, transId);
+		if ((transId == 0) || (transId > MAX_OUTSTANDING_TX)) {
+			DEBUGPRINT(3, "CMD_TX_REQUEST chan %d ERROR transid to high %d\n",
+			           chid, transId);
+		}
+		else {
+			if (hChd->current_tx_message[transId - 1].flags &
+			    VCAN_MSG_FLAG_TXRQ) {
+				VCAN_EVENT* e =
+				        (VCAN_EVENT*) &hChd->current_tx_message[transId - 1];
+				e->tag = V_RECEIVE_MSG;
+				e->timeStamp = timestamp_to_ticks(vCard, packet->timestamp);
+				e->tagData.msg.flags &= ~VCAN_MSG_FLAG_TXACK;
+				vCanDispatchEvent(vChd, e);
+			}
 
-      // A TxReq. Take the current tx message, modify it to a
-      // receive message and send it back.
+			++hChd->debug.trq_packet_count;
+		}
+	}
+	// +----------------------------------------------------------------------
+	// | Data packet
+	// |
+	// +----------------------------------------------------------------------
+	else if (isDataPacket(packet)) {
+		unsigned short int flags;
+		unsigned int nbytes;
 
-      if ((transId == 0) || (transId > MAX_OUTSTANDING_TX)) {
-        DEBUGPRINT(3, "CMD_TX_REQUEST chan %d ERROR transid to high %d\n",
-                   chid, transId);
-      }else{
-        if (hChd->current_tx_message[transId - 1].flags & VCAN_MSG_FLAG_TXRQ)
-          {
-            VCAN_EVENT *e         = (VCAN_EVENT *)&hChd->current_tx_message[transId - 1];
-            e->tag                = V_RECEIVE_MSG;
-            e->timeStamp          = timestamp_to_ticks(vCard, packet->timestamp);
-            e->tagData.msg.flags &=  ~VCAN_MSG_FLAG_TXACK;
-            vCanDispatchEvent(vChd, e);
-          }
+		int id = getId(packet);
 
-        ++hChd->debug.trq_packet_count;
-      }
-    }
-  // +----------------------------------------------------------------------
-  // | Data packet
-  // |
-  // +----------------------------------------------------------------------
-  else if ( isDataPacket(packet) )
-    {
-      unsigned short int  flags;
-      unsigned int nbytes;
+		DEBUGPRINT(4,
+		           "### Data packet : chan(%u) dlc(%u) ext(%u) rem(%u) seq "
+		           "no(%u)\n",
+		           chid, getDLC(packet), isExtendedId(packet),
+		           isRemoteRequest(packet), getSeqNo(packet));
 
-      int id = getId(packet);
+		if (errorWarning(packet)) {
+			DEBUGPRINT(4, "### Error Warning Limit Reached\n");
+		}
 
-      DEBUGPRINT(4,"### Data packet : chan(%u) dlc(%u) ext(%u) rem(%u) seq no(%u)\n",
-                 chid,
-                 getDLC(packet),
-                 isExtendedId(packet),
-                 isRemoteRequest(packet),
-                 getSeqNo(packet) );
+		if (isErrorPassive(packet)) {
+			DEBUGPRINT(4, "### Error Passive Limit Reached\n");
+		}
 
-      if ( errorWarning(packet) ) {
-        DEBUGPRINT(4,"### Error Warning Limit Reached\n");
-      }
+		if (receiverOverflow(packet)) {
+			DEBUGPRINT(3, "### Receive Buffer Overrun Error\n");
+			hChd->overrun_occured = 1;
+		}
 
-      if ( isErrorPassive(packet) ) {
-        DEBUGPRINT(4,"### Error Passive Limit Reached\n");
-      }
+		if (isExtendedId(packet)) {
+			id |= VCAN_EXT_MSG_ID;
+		}
 
-      if ( receiverOverflow(packet) ) {
-        DEBUGPRINT(3,"### Receive Buffer Overrun Error\n");
-        hChd->overrun_occured = 1;
-      }
+		flags = (unsigned char) (isRemoteRequest(packet)
+		                                 ? VCAN_MSG_FLAG_REMOTE_FRAME
+		                                 : 0);
 
-      if ( isExtendedId(packet) ) {
-        id |= VCAN_EXT_MSG_ID;
-      }
+		if (hChd->overrun_occured) {
+			flags |= VCAN_MSG_FLAG_OVERRUN;
+			hChd->overrun_occured = 0;
+		}
 
-      flags = (unsigned char)(isRemoteRequest(packet) ? VCAN_MSG_FLAG_REMOTE_FRAME : 0);
+		if (isFlexibleDataRateFormat(packet)) {
+			flags |= VCAN_MSG_FLAG_FDF;
+			DEBUGPRINT(4, "Received CAN FD frame\n");
 
-      if (hChd->overrun_occured) {
-        flags |= VCAN_MSG_FLAG_OVERRUN;
-        hChd->overrun_occured = 0;
-      }
+			if (isAlternateBitRate(packet)) {
+				flags |= VCAN_MSG_FLAG_BRS;
+			}
+			if (errorStateIndicated(packet)) {
+				flags |= VCAN_MSG_FLAG_ESI;
+			}
 
-      if( isFlexibleDataRateFormat(packet) )
-        {
-          flags |= VCAN_MSG_FLAG_FDF;
-          DEBUGPRINT(4,"Received CAN FD frame\n");
+			nbytes = dlcToBytesFD(getDLC(packet));
 
-          if( isAlternateBitRate(packet) ){
-            flags |= VCAN_MSG_FLAG_BRS;
-          }
-          if( errorStateIndicated(packet) ){
-            flags |= VCAN_MSG_FLAG_ESI;
-          }
+			e.tagData.msg.dlc = getDLC(packet) & 0x0f;
+		}
+		else {
+			nbytes = dlcToBytes(getDLC(packet));
+			e.tagData.msg.dlc = getDLC(packet) & 0x0f;
+		}
 
-          nbytes = dlcToBytesFD(getDLC(packet));
+		e.tag = V_RECEIVE_MSG;
+		e.timeStamp = timestamp_to_ticks(vCard, packet->timestamp);
+		e.transId = 0;
+		e.tagData.msg.id = id;
+		e.tagData.msg.flags = flags;
 
-          e.tagData.msg.dlc   = getDLC(packet) & 0x0f;
-        }
-      else
-        {
-          nbytes = dlcToBytes(getDLC(packet));
-          e.tagData.msg.dlc = getDLC(packet) & 0x0f;
-        }
+		memcpy(e.tagData.msg.data, packet->data, nbytes);
 
-      e.tag               = V_RECEIVE_MSG;
-      e.timeStamp         = timestamp_to_ticks(vCard, packet->timestamp);
-      e.transId           = 0;
-      e.tagData.msg.id    = id;
-      e.tagData.msg.flags = flags;
+		r = vCanDispatchEvent(vChd, &e);
 
-      memcpy(e.tagData.msg.data, packet->data, nbytes);
+		if (hChd->debug.got_seq_no) {
+			unsigned char next_seq_no = hChd->debug.last_seq_no + 1;
 
-      r = vCanDispatchEvent(vChd, &e);
+			if (getSeqNo(packet) != next_seq_no) {
+				++hChd->debug.seq_no_mismatch;
+			}
+		}
+		else {
+			hChd->debug.got_seq_no = 1;
+		}
+		hChd->debug.last_seq_no = getSeqNo(packet);
 
-      if ( hChd->debug.got_seq_no ) {
-        unsigned char next_seq_no = hChd->debug.last_seq_no + 1;
+		++hChd->debug.packet_count;
 
-        if ( getSeqNo(packet) != next_seq_no ) {
-          ++hChd->debug.seq_no_mismatch;
-        }
-      }else{
-        hChd->debug.got_seq_no = 1;
-      }
-      hChd->debug.last_seq_no = getSeqNo(packet);
+		if (vChd->errorCount > 0) {
+			spin_lock_irqsave(&hChd->lock, irqFlags);
 
-      ++hChd->debug.packet_count;
+			pciCanResetErrorCounter(vChd);
 
-      if (vChd->errorCount > 0) {
-        spin_lock_irqsave(&hChd->lock, irqFlags);
+			spin_unlock_irqrestore(&hChd->lock, irqFlags);
+		}
+	}
+	// +----------------------------------------------------------------------
+	// | Bus Load packet
+	// +----------------------------------------------------------------------
+	else if (isBusLoadPacket(packet)) {
+		DEBUGPRINT(4, "Bus Load\n");
 
-        pciCanResetErrorCounter(vChd);
+		hChd->load = getBusLoad(packet) / BLP_DIVISOR;
+		hChd->debug.bus_load = hChd->load;
+	}
+	// +----------------------------------------------------------------------
+	// | End of flush ack packet
+	// +----------------------------------------------------------------------
+	else if (isEFlushAckPacket(packet)) {
+		// Do nothing
+		DEBUGPRINT(4, "CH:%u End of flush ack\n", chid);
 
-        spin_unlock_irqrestore(&hChd->lock, irqFlags);
-      }
-    }
-  // +----------------------------------------------------------------------
-  // | Bus Load packet
-  // +----------------------------------------------------------------------
-  else if( isBusLoadPacket(packet) )
-    {
-      DEBUGPRINT(4,"Bus Load\n");
-
-      hChd->load = getBusLoad(packet) / BLP_DIVISOR;
-      hChd->debug.bus_load = hChd->load;
-    }
-  // +----------------------------------------------------------------------
-  // | End of flush ack packet
-  // +----------------------------------------------------------------------
-  else if( isEFlushAckPacket(packet) )
-    {
-      // Do nothing
-      DEBUGPRINT(4,"CH:%u End of flush ack\n", chid);
-
-      if(!isFlushed(packet))
-        {
-          DEBUGPRINT(3,"End of flush ack when device was not in flush mode\n");
-        }
-    }
-  else
-    {
-      DEBUGPRINT(3,"Unknown packet type\n");
-    }
+		if (!isFlushed(packet)) {
+			DEBUGPRINT(3,
+			           "End of flush ack when device was not in flush mode\n");
+		}
+	}
+	else {
+		DEBUGPRINT(3, "Unknown packet type\n");
+	}
 }
 
 //======================================================================
 //  Timeout handler for the waitResponse below
 //======================================================================
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
-static void interruptRestart (unsigned long data)
+static void interruptRestart(unsigned long data)
 {
-  VCanCardTimerData *ir = (VCanCardTimerData *) data;
+	VCanCardTimerData* ir = (VCanCardTimerData*) data;
 #else
-static void interruptRestart (struct timer_list *t)
+static void interruptRestart(struct timer_list* t)
 {
-  VCanCardTimerData *ir = from_timer(ir, t, timer);
+	VCanCardTimerData* ir = from_timer(ir, t, timer);
 #endif /* KERNEL_VERSION < 4.15.0 */
-  VCanCardData *vCard = ir->vCard;
-  int i;
-  for(i=0;i<(unsigned)vCard->nrChannels;i++)
-    {
-      VCanChanData   *vChd = vCard->chanData[i];
+	VCanCardData* vCard = ir->vCard;
+	int i;
+	for (i = 0; i < (unsigned) vCard->nrChannels; i++) {
+		VCanChanData* vChd = vCard->chanData[i];
 
-      DEBUGPRINT(3, "Reset error count %u txerr %u rxerr %u\n",vChd->errorCount,
-                 (unsigned char)vChd->chipState.txerr,
-                 (unsigned char)vChd->chipState.rxerr
-                 );
-      vChd->errorCount = 0;
-    }
+		DEBUGPRINT(3, "Reset error count %u txerr %u rxerr %u\n",
+		           vChd->errorCount, (unsigned char) vChd->chipState.txerr,
+		           (unsigned char) vChd->chipState.rxerr);
+		vChd->errorCount = 0;
+	}
 
-  DEBUGPRINT(3,"Reenable interrupt\n");
-  pciCanInterrupts(vCard,1);
+	DEBUGPRINT(3, "Reenable interrupt\n");
+	pciCanInterrupts(vCard, 1);
 }
-
 
 //======================================================================
 //  Interrupt handling functions
@@ -2693,1284 +2721,1255 @@ static void interruptRestart (struct timer_list *t)
 //  * Will be called without lock as all the receive FIFO accesses are card
 //    specific and are accessed only from the interrupt context.
 //======================================================================
-static void pciCanReceiveIsr (VCanCardData *vCard)
+static void pciCanReceiveIsr(VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  VCanCardTimerData timerData;
-  // Limit absolute number of loops
-  unsigned int loopMax  = 10000;
-  unsigned long irqFlags;
-  unsigned int dataValid = 0;
-  unsigned int irqHandled = 0;
-  unsigned int irq;
+	PciCanCardData* hCard = vCard->hwCardData;
+	VCanCardTimerData timerData;
+	// Limit absolute number of loops
+	unsigned int loopMax = 10000;
+	unsigned long irqFlags;
+	unsigned int dataValid = 0;
+	unsigned int irqHandled = 0;
+	unsigned int irq;
 
-  while(1)
-    {
-      dataValid = 0;
-      // A loop counter as a safety measure.
-      // NOTE: Returning from within the pciCanReceiveIsr main loop will result in interrupts being lost.
-      if (--loopMax == 0) {
-        int i;
-        DEBUGPRINT(3, "pciCanReceiverIsr: Loop counter as a safety measure!!!\n");
-        DEBUGPRINT(3, "During test, shutting down card!\n");
-        for(i=0;i<(unsigned)vCard->nrChannels;i++)
-          {
-            VCanChanData   *vChd = vCard->chanData[i];
-            PciCanChanData *hChd = vChd->hwChanData;
+	while (1) {
+		dataValid = 0;
+		// A loop counter as a safety measure.
+		// NOTE: Returning from within the pciCanReceiveIsr main loop will
+		// result in interrupts being lost.
+		if (--loopMax == 0) {
+			int i;
+			DEBUGPRINT(
+			        3,
+			        "pciCanReceiverIsr: Loop counter as a safety measure!!!\n");
+			DEBUGPRINT(3, "During test, shutting down card!\n");
+			for (i = 0; i < (unsigned) vCard->nrChannels; i++) {
+				VCanChanData* vChd = vCard->chanData[i];
+				PciCanChanData* hChd = vChd->hwChanData;
 
-            DEBUGPRINT(3, "Errorcount %u\n",vChd->errorCount);
+				DEBUGPRINT(3, "Errorcount %u\n", vChd->errorCount);
 
-            DEBUGPRINT(3,"ch%u IEN:%08x IRQ:%08x\n",
-                       i,
-                       IORD_PCIEFD_IEN(hChd->canControllerBase),
-                       IORD_PCIEFD_IRQ(hChd->canControllerBase)
-                       );
-          }
-        pciCanInterrupts(vCard,0);
+				DEBUGPRINT(3, "ch%u IEN:%08x IRQ:%08x\n", i,
+				           IORD_PCIEFD_IEN(hChd->canControllerBase),
+				           IORD_PCIEFD_IRQ(hChd->canControllerBase));
+			}
+			pciCanInterrupts(vCard, 0);
 
-        // Set a timer to restart interrupts
-        timerData.vCard = vCard;
+			// Set a timer to restart interrupts
+			timerData.vCard = vCard;
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0))
-        init_timer(&timerData.timer);
-        timerData.timer.function = interruptRestart;
-        timerData.timer.data = (unsigned long)&timerData;
+			init_timer(&timerData.timer);
+			timerData.timer.function = interruptRestart;
+			timerData.timer.data = (unsigned long) &timerData;
 #else
-        timer_setup(&timerData.timer, interruptRestart, 0);
+			timer_setup(&timerData.timer, interruptRestart, 0);
 #endif /* KERNEL_VERSION < 4.15.0 */
-        timerData.timer.expires = jiffies + msecs_to_jiffies(100);
-        add_timer(&timerData.timer);
+			timerData.timer.expires = jiffies + msecs_to_jiffies(100);
+			add_timer(&timerData.timer);
 
-        break;//return;
-      }
+			break; // return;
+		}
 
-      spin_lock_irqsave(&hCard->lock, irqFlags);
+		spin_lock_irqsave(&hCard->lock, irqFlags);
 
-      irq = fifoIrqStatus(hCard->canRxBuffer);
+		irq = fifoIrqStatus(hCard->canRxBuffer);
 
-      if(irq & RXBUF_IRQ_RA_MSK)
-        {
+		if (irq & RXBUF_IRQ_RA_MSK) {
 #if USE_DMA
-          if(hCard->useDma && hCard->dmaCtx.enabled) {
-            DEBUGPRINT(3,"Warning:FIFO direct access\n");
-          }
+			if (hCard->useDma && hCard->dmaCtx.enabled) {
+				DEBUGPRINT(3, "Warning:FIFO direct access\n");
+			}
 #endif
-          // +----------------------------------------------------------------------
-          // | Read from FIFO
-          // | The lock could probably be removed as the FIFO is only accessed from
-          // | this point.
-          // +----------------------------------------------------------------------
-          // 2. Store one packet for each channel with data at beginning of interrupt
-          if(readFIFO(vCard, &hCard->packet) < 0)
-            {
-              uint32_t tmp = IORD_RXBUF_CTRL(hCard->canRxBuffer);
-              DEBUGPRINT(3,"readFIFO error\n");
+			// +----------------------------------------------------------------------
+			// | Read from FIFO
+			// | The lock could probably be removed as the FIFO is only accessed
+			// from | this point.
+			// +----------------------------------------------------------------------
+			// 2. Store one packet for each channel with data at beginning of
+			// interrupt
+			if (readFIFO(vCard, &hCard->packet) < 0) {
+				uint32_t tmp = IORD_RXBUF_CTRL(hCard->canRxBuffer);
+				DEBUGPRINT(3, "readFIFO error\n");
 
 #if USE_DMA
-              if(hCard->useDma)
-                DEBUGPRINT(3,"IOC:%x EN:%u\n", tmp, hCard->dmaCtx.enabled);
+				if (hCard->useDma)
+					DEBUGPRINT(3, "IOC:%x EN:%u\n", tmp, hCard->dmaCtx.enabled);
 #endif
-              if(tmp & RXBUF_CTRL_DMAEN_MSK)
-                {
-                  DEBUGPRINT(3,"DMAEN\n");
-                  tmp = IORD_RXBUF_IEN(hCard->canRxBuffer);
-                  IOWR_RXBUF_IEN(hCard->canRxBuffer, tmp & ~RXBUF_IRQ_RA_MSK);
-                }
-            }
-          else
-            {
-              dataValid = 1;
-            }
+				if (tmp & RXBUF_CTRL_DMAEN_MSK) {
+					DEBUGPRINT(3, "DMAEN\n");
+					tmp = IORD_RXBUF_IEN(hCard->canRxBuffer);
+					IOWR_RXBUF_IEN(hCard->canRxBuffer, tmp & ~RXBUF_IRQ_RA_MSK);
+				}
+			}
+			else {
+				dataValid = 1;
+			}
 
-          // Try to clear receieved interrupt (will not have any effect if more packets are available)
-          irqHandled = RXBUF_IRQ_RA_MSK;
-        }
+			// Try to clear receieved interrupt (will not have any effect if
+			// more packets are available)
+			irqHandled = RXBUF_IRQ_RA_MSK;
+		}
 #if USE_DMA
-      // DMA Interrupts
-      else if( irq & RXBUF_IRQ_DMA_DONE0_MSK )
-        {
-          irqHandled |= RXBUF_IRQ_DMA_DONE0_MSK;
+		// DMA Interrupts
+		else if (irq & RXBUF_IRQ_DMA_DONE0_MSK) {
+			irqHandled |= RXBUF_IRQ_DMA_DONE0_MSK;
 
-          aquireDmaBuffer(vCard,0);
-        }
-      else if( irq & RXBUF_IRQ_DMA_DONE1_MSK )
-        {
-          irqHandled |= RXBUF_IRQ_DMA_DONE1_MSK;
+			aquireDmaBuffer(vCard, 0);
+		}
+		else if (irq & RXBUF_IRQ_DMA_DONE1_MSK) {
+			irqHandled |= RXBUF_IRQ_DMA_DONE1_MSK;
 
-          aquireDmaBuffer(vCard,1);
-        }
+			aquireDmaBuffer(vCard, 1);
+		}
 
-      if(hCard->useDma && (hCard->dmaCtx.active >= 0))
-        {
-          int bufid = hCard->dmaCtx.active;
-          int status = readDMA(vCard, &hCard->packet);
+		if (hCard->useDma && (hCard->dmaCtx.active >= 0)) {
+			int bufid = hCard->dmaCtx.active;
+			int status = readDMA(vCard, &hCard->packet);
 
-          if(status == VCAN_STAT_OK)
-            { // A packet was read from theDMA buffer
-              if(hCard->dmaCtx.active < 0)
-                DEBUGPRINT(3,"DMA: Unexpected deactivation\n");
+			if (status ==
+			    VCAN_STAT_OK) { // A packet was read from theDMA buffer
+				if (hCard->dmaCtx.active < 0)
+					DEBUGPRINT(3, "DMA: Unexpected deactivation\n");
 
-              dataValid = 1;
-            }
-          else
-            { // Buffer is empty, release to device and rearm DMA
-              hCard->dmaCtx.active = -1;
+				dataValid = 1;
+			}
+			else { // Buffer is empty, release to device and rearm DMA
+				hCard->dmaCtx.active = -1;
 
-              releaseDmaBuffer(vCard, bufid);
-              // No more data in current buffer
-              if(bufid == 0)
-                armDMA0(hCard->canRxBuffer);
-              else if(bufid == 1)
-                armDMA1(hCard->canRxBuffer);
-            }
-        }
+				releaseDmaBuffer(vCard, bufid);
+				// No more data in current buffer
+				if (bufid == 0)
+					armDMA0(hCard->canRxBuffer);
+				else if (bufid == 1)
+					armDMA1(hCard->canRxBuffer);
+			}
+		}
 #endif
 
-      spin_unlock_irqrestore(&hCard->lock, irqFlags);
+		spin_unlock_irqrestore(&hCard->lock, irqFlags);
 
 #if USE_DMA
-      if( irq & RXBUF_IRQ_DMA_OVF0_MSK )
-        {
-          irqHandled |= RXBUF_IRQ_DMA_OVF0_MSK;
+		if (irq & RXBUF_IRQ_DMA_OVF0_MSK) {
+			irqHandled |= RXBUF_IRQ_DMA_OVF0_MSK;
 
-          DEBUGPRINT(3,"DMA OVF 0\n");
+			DEBUGPRINT(3, "DMA OVF 0\n");
 
-          if(hCard->dmaCtx.active == 0)
-            {
-              DEBUGPRINT(3,"DMA restart\n");
-              hCard->dmaCtx.active = -1;
-            }
-        }
+			if (hCard->dmaCtx.active == 0) {
+				DEBUGPRINT(3, "DMA restart\n");
+				hCard->dmaCtx.active = -1;
+			}
+		}
 
-      if( irq & RXBUF_IRQ_DMA_OVF1_MSK )
-        {
-          irqHandled |= RXBUF_IRQ_DMA_OVF1_MSK;
+		if (irq & RXBUF_IRQ_DMA_OVF1_MSK) {
+			irqHandled |= RXBUF_IRQ_DMA_OVF1_MSK;
 
-          DEBUGPRINT(3,"DMA OVF 1\n");
+			DEBUGPRINT(3, "DMA OVF 1\n");
 
-          if(hCard->dmaCtx.active == 1)
-            {
-              DEBUGPRINT(3,"DMA restart\n");
-              hCard->dmaCtx.active = -1;
-            }
-        }
+			if (hCard->dmaCtx.active == 1) {
+				DEBUGPRINT(3, "DMA restart\n");
+				hCard->dmaCtx.active = -1;
+			}
+		}
 
-      if( irq & RXBUF_IRQ_DMA_UNF0_MSK )
-        {
-          irqHandled |= RXBUF_IRQ_DMA_UNF0_MSK;
+		if (irq & RXBUF_IRQ_DMA_UNF0_MSK) {
+			irqHandled |= RXBUF_IRQ_DMA_UNF0_MSK;
 
-          DEBUGPRINT(3,"DMA UNF 0\n");
-        }
+			DEBUGPRINT(3, "DMA UNF 0\n");
+		}
 
-      if( irq & RXBUF_IRQ_DMA_UNF1_MSK )
-        {
-          irqHandled |= RXBUF_IRQ_DMA_UNF1_MSK;
+		if (irq & RXBUF_IRQ_DMA_UNF1_MSK) {
+			irqHandled |= RXBUF_IRQ_DMA_UNF1_MSK;
 
-          DEBUGPRINT(3,"DMA UNF 1\n");
-        }
+			DEBUGPRINT(3, "DMA UNF 1\n");
+		}
 
-      if ((irq & RXBUF_IRQ_DMA_DONE0_MSK ) && (irq & RXBUF_IRQ_DMA_DONE1_MSK))
-        {
-          DEBUGPRINT(3,"Warning: Both buffer signals ready status\n");
-        }
+		if ((irq & RXBUF_IRQ_DMA_DONE0_MSK) &&
+		    (irq & RXBUF_IRQ_DMA_DONE1_MSK)) {
+			DEBUGPRINT(3, "Warning: Both buffer signals ready status\n");
+		}
 
 #endif
 
-      if(irq & RXBUF_IRQ_UNDERFLOW_MSK)
-        {
-          DEBUGPRINT(3,"RXBUF_IRQ_UNDERFLOW\n");
-          irqHandled |= RXBUF_IRQ_UNDERFLOW_MSK;
-        }
+		if (irq & RXBUF_IRQ_UNDERFLOW_MSK) {
+			DEBUGPRINT(3, "RXBUF_IRQ_UNDERFLOW\n");
+			irqHandled |= RXBUF_IRQ_UNDERFLOW_MSK;
+		}
 
-      if(irq & RXBUF_IRQ_UNALIGNED_READ_MSK)
-        {
-          DEBUGPRINT(3,"RXBUF_IRQ_UNALIGNED_READ\n");
-          irqHandled |= RXBUF_IRQ_UNALIGNED_READ_MSK;
-        }
+		if (irq & RXBUF_IRQ_UNALIGNED_READ_MSK) {
+			DEBUGPRINT(3, "RXBUF_IRQ_UNALIGNED_READ\n");
+			irqHandled |= RXBUF_IRQ_UNALIGNED_READ_MSK;
+		}
 
-      if(irq & RXBUF_IRQ_MISSING_TAG_MSK)
-        {
-          DEBUGPRINT(3,"RXBUF_IRQ_MISSING_TAG\n");
-          irqHandled |= RXBUF_IRQ_MISSING_TAG_MSK;
-        }
+		if (irq & RXBUF_IRQ_MISSING_TAG_MSK) {
+			DEBUGPRINT(3, "RXBUF_IRQ_MISSING_TAG\n");
+			irqHandled |= RXBUF_IRQ_MISSING_TAG_MSK;
+		}
 
-      fifoIrqClear(hCard->canRxBuffer ,irqHandled);
+		fifoIrqClear(hCard->canRxBuffer, irqHandled);
 
-      if( (irq & ~irqHandled) != 0 )
-        {
-          DEBUGPRINT(3,"Unhandled interrupt %x\n",irq & ~irqHandled);
-          fifoIrqClear(hCard->canRxBuffer, irq & ~irqHandled);
-        }
+		if ((irq & ~irqHandled) != 0) {
+			DEBUGPRINT(3, "Unhandled interrupt %x\n", irq & ~irqHandled);
+			fifoIrqClear(hCard->canRxBuffer, irq & ~irqHandled);
+		}
 
-      if(dataValid)
-        receivedPacketHandler(vCard);
-      else
-        break;//return;
-    }
+		if (dataValid)
+			receivedPacketHandler(vCard);
+		else
+			break; // return;
+	}
 } // pciCanReceiveIsr
-
 
 //======================================================================
 //  Transmit interrupt handler
 //  Must be called with channel locked (to avoid access interference).
 //======================================================================
-static void pciCanTransmitIsr (VCanChanData *vChd)
+static void pciCanTransmitIsr(VCanChanData* vChd)
 {
-  PciCanChanData *hChd = vChd->hwChanData;
-  unsigned int irq;
-  unsigned int irqHandled = 0;
+	PciCanChanData* hChd = vChd->hwChanData;
+	unsigned int irq;
+	unsigned int irqHandled = 0;
 
-  irq = irqStatus(hChd->canControllerBase);
+	irq = irqStatus(hChd->canControllerBase);
 
-  if(irq & PCIEFD_IRQ_TAR_MSK)
-    {
-      DEBUGPRINT(3,"PCIEFD_IRQ_TAR_MSK\n");
-      irqHandled |= PCIEFD_IRQ_TAR_MSK;
-    }
+	if (irq & PCIEFD_IRQ_TAR_MSK) {
+		DEBUGPRINT(3, "PCIEFD_IRQ_TAR_MSK\n");
+		irqHandled |= PCIEFD_IRQ_TAR_MSK;
+	}
 
-  if(irq & PCIEFD_IRQ_TAE_MSK)
-    {
-      DEBUGPRINT(3,"PCIEFD_IRQ_TAE_MSK\n");
-      irqHandled |= PCIEFD_IRQ_TAE_MSK;
-    }
+	if (irq & PCIEFD_IRQ_TAE_MSK) {
+		DEBUGPRINT(3, "PCIEFD_IRQ_TAE_MSK\n");
+		irqHandled |= PCIEFD_IRQ_TAE_MSK;
+	}
 
-  if(irq & PCIEFD_IRQ_BPP_MSK)
-    {
-      DEBUGPRINT(3,"PCIEFD_IRQ_BPP_MSK\n");
-      irqHandled |= PCIEFD_IRQ_BPP_MSK;
-    }
+	if (irq & PCIEFD_IRQ_BPP_MSK) {
+		DEBUGPRINT(3, "PCIEFD_IRQ_BPP_MSK\n");
+		irqHandled |= PCIEFD_IRQ_BPP_MSK;
+	}
 
-  if(irq & PCIEFD_IRQ_FDIC_MSK)
-    {
-      DEBUGPRINT(3,"PCIEFD_IRQ_FDIC_MSK\n");
-      irqHandled |= PCIEFD_IRQ_FDIC_MSK;
-    }
+	if (irq & PCIEFD_IRQ_FDIC_MSK) {
+		DEBUGPRINT(3, "PCIEFD_IRQ_FDIC_MSK\n");
+		irqHandled |= PCIEFD_IRQ_FDIC_MSK;
+	}
 
+	if (irq & PCIEFD_IRQ_TOF_MSK) {
+		DEBUGPRINT(3, "PCIEFD_IRQ_TOF_MSK\n");
+		irqHandled |= PCIEFD_IRQ_TOF_MSK;
+	}
 
-  if(irq & PCIEFD_IRQ_TOF_MSK)
-    {
-      DEBUGPRINT(3,"PCIEFD_IRQ_TOF_MSK\n");
-      irqHandled |= PCIEFD_IRQ_TOF_MSK;
-    }
+	if (irq & PCIEFD_IRQ_TAL_MSK) {
+		DEBUGPRINT(3, "PCIEFD_IRQ_TAL_MSK\n");
+		irqHandled |= PCIEFD_IRQ_TAL_MSK;
+	}
 
-  if(irq & PCIEFD_IRQ_TAL_MSK)
-    {
-      DEBUGPRINT(3,"PCIEFD_IRQ_TAL_MSK\n");
-      irqHandled |= PCIEFD_IRQ_TAL_MSK;
-    }
-
-
-  irqClear(hChd->canControllerBase ,irqHandled);
+	irqClear(hChd->canControllerBase, irqHandled);
 } // pciCanTransmitIsr
-
 
 //======================================================================
 //  Main ISR
 //======================================================================
 // Interrupt handler prototype changed in 2.6.19.
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 19))
-irqreturn_t pciCanInterrupt (int irq, void *dev_id, struct pt_regs *regs)
+irqreturn_t pciCanInterrupt(int irq, void* dev_id, struct pt_regs* regs)
 #else
-  irqreturn_t pciCanInterrupt (int irq, void *dev_id)
+irqreturn_t pciCanInterrupt(int irq, void* dev_id)
 #endif
 {
-  VCanCardData    *vCard   = (VCanCardData *)dev_id;
-  PciCanCardData  *hCard;
-  unsigned int    loopmax  = 10000;
-  int             handled = 0;
-  unsigned long   pcie_irq;
+	VCanCardData* vCard = (VCanCardData*) dev_id;
+	PciCanCardData* hCard;
+	unsigned int loopmax = 10000;
+	int handled = 0;
+	unsigned long pcie_irq;
 
-  if(!vCard)
-    {
-      DEBUGPRINT(1, "Unassigned IRQ\n");
-      return IRQ_NONE;
-    }
+	if (!vCard) {
+		DEBUGPRINT(1, "Unassigned IRQ\n");
+		return IRQ_NONE;
+	}
 
-  hCard = vCard->hwCardData;
+	hCard = vCard->hwCardData;
 
-  // Read interrupt status from Altera PCIe HW
-  while ( (pcie_irq = (IORD_PCIE_IRQ(hCard->pcie) & ALL_INTERRUPT_SOURCES_MSK)) )
-    {
-      int i;
+	// Read interrupt status from Altera PCIe HW
+	while ((pcie_irq =
+	                (IORD_PCIE_IRQ(hCard->pcie) & ALL_INTERRUPT_SOURCES_MSK))) {
+		int i;
 
-      if (--loopmax == 0) {
-        // Kill the card.
-        DEBUGPRINT(1, "PCIcan runaway, shutting down card!! (pcie_irq:0x%x)\n",(unsigned int)pcie_irq);
+		if (--loopmax == 0) {
+			// Kill the card.
+			DEBUGPRINT(1,
+			           "PCIcan runaway, shutting down card!! (pcie_irq:0x%x)\n",
+			           (unsigned int) pcie_irq);
 
-        pciCanInterrupts(vCard,0);
-        return IRQ_HANDLED;
-      }
+			pciCanInterrupts(vCard, 0);
+			return IRQ_HANDLED;
+		}
 
-      handled = 1;
+		handled = 1;
 
-      // Handle shared receive buffer interrupt first
-      if ( pcie_irq & RECEIVE_BUFFER_IRQ ) {
-        pciCanReceiveIsr(vCard);
-      }
+		// Handle shared receive buffer interrupt first
+		if (pcie_irq & RECEIVE_BUFFER_IRQ) {
+			pciCanReceiveIsr(vCard);
+		}
 
-      // Handle interrupts for each can controllerCFLAGS
-      for (i = 0; i < vCard->nrChannels; i++) {
-        VCanChanData    *vChd;
-        PciCanChanData  *hChd;
+		// Handle interrupts for each can controllerCFLAGS
+		for (i = 0; i < vCard->nrChannels; i++) {
+			VCanChanData* vChd;
+			PciCanChanData* hChd;
 
-        vChd = vCard->chanData[i];
-        hChd = vChd->hwChanData;
+			vChd = vCard->chanData[i];
+			hChd = vChd->hwChanData;
 
-        if ( pcie_irq & hChd->tx_irq_msk ) {
-          pciCanTransmitIsr(vChd);
-        }
-      }
-    }
+			if (pcie_irq & hChd->tx_irq_msk) {
+				pciCanTransmitIsr(vChd);
+			}
+		}
+	}
 
-  return IRQ_RETVAL(handled);
+	return IRQ_RETVAL(handled);
 } // pciCanInterrupt
-
 
 //======================================================================
 //  pcicanTransmit
 //======================================================================
-static int pciCanTransmitMessage (VCanChanData *vChd, CAN_MSG *m)
+static int pciCanTransmitMessage(VCanChanData* vChd, CAN_MSG* m)
 {
-  PciCanChanData     *hChd  = vChd->hwChanData;
-  char*               msg   = (char*)m->data;
-  signed long         ident = m->id;
-  unsigned short int  flags = m->flags;
-  unsigned long       irqFlags;
-  int                 transId;
-  pciefd_packet_t     packet;
-  unsigned int        nbytes;
+	PciCanChanData* hChd = vChd->hwChanData;
+	char* msg = (char*) m->data;
+	signed long ident = m->id;
+	unsigned short int flags = m->flags;
+	unsigned long irqFlags;
+	int transId;
+	pciefd_packet_t packet;
+	unsigned int nbytes;
 
-  if (!atomic_add_unless(&hChd->outstanding_tx, 1, MAX_OUTSTANDING_TX)) {
-    DEBUGPRINT(1, "Trying to increase outstanding_tx above max\n");
-    return VCAN_STAT_NO_RESOURCES;
-  }
+	if (!atomic_add_unless(&hChd->outstanding_tx, 1, MAX_OUTSTANDING_TX)) {
+		DEBUGPRINT(1, "Trying to increase outstanding_tx above max\n");
+		return VCAN_STAT_NO_RESOURCES;
+	}
 
-  transId = atomic_read(&vChd->transId);
+	transId = atomic_read(&vChd->transId);
 
-  if (hChd->current_tx_message[transId - 1].user_data) {
-    DEBUGPRINT(2, "Transid is already in use: %x %d   %x %d CH:%u\n\n",
-               hChd->current_tx_message[transId - 1].id,
-               transId,
-               m->id,
-               atomic_read(&hChd->outstanding_tx),
-               vChd->channel);
-  }
+	if (hChd->current_tx_message[transId - 1].user_data) {
+		DEBUGPRINT(2, "Transid is already in use: %x %d   %x %d CH:%u\n\n",
+		           hChd->current_tx_message[transId - 1].id, transId, m->id,
+		           atomic_read(&hChd->outstanding_tx), vChd->channel);
+	}
 
-  hChd->current_tx_message[transId - 1] = *m;
+	hChd->current_tx_message[transId - 1] = *m;
 
-  if (flags & VCAN_MSG_FLAG_ERROR_FRAME) { // Error frame
-    spin_lock_irqsave(&hChd->lock, irqFlags);
+	if (flags & VCAN_MSG_FLAG_ERROR_FRAME) { // Error frame
+		spin_lock_irqsave(&hChd->lock, irqFlags);
 
-    DEBUGPRINT(4,"CH:%u Generate Error Frame %u\n",vChd->channel,transId);
+		DEBUGPRINT(4, "CH:%u Generate Error Frame %u\n", vChd->channel,
+		           transId);
 
-    // Write an error frame control word
-    IOWR_PCIEFD_CONTROL(hChd->canControllerBase, PCIEFD_CONTROL_ERROR_FRAME | transId);
-  }
-  else {
-    if (flags & VCAN_MSG_FLAG_FDF) { // CAN FD Format (Extended Data Length)
+		// Write an error frame control word
+		IOWR_PCIEFD_CONTROL(hChd->canControllerBase,
+		                    PCIEFD_CONTROL_ERROR_FRAME | transId);
+	}
+	else {
+		if (flags & VCAN_MSG_FLAG_FDF) { // CAN FD Format (Extended Data Length)
 
-        DEBUGPRINT(4,"Send CAN FD Frame\n");
+			DEBUGPRINT(4, "Send CAN FD Frame\n");
 
-        nbytes = setupFDBaseFormat(&packet, ident & ~VCAN_EXT_MSG_ID, m->length & 0x0f, transId);
+			nbytes = setupFDBaseFormat(&packet, ident & ~VCAN_EXT_MSG_ID,
+			                           m->length & 0x0f, transId);
 
-        if (flags & VCAN_MSG_FLAG_BRS) {
-          setBitRateSwitch(&packet);
-        }
-    }
-    else {
-      nbytes = setupBaseFormat(&packet, ident & ~VCAN_EXT_MSG_ID, m->length & 0x0f, transId);
-      if (flags & VCAN_MSG_FLAG_REMOTE_FRAME) {
-        setRemoteRequest(&packet);
-      }
-    }
+			if (flags & VCAN_MSG_FLAG_BRS) {
+				setBitRateSwitch(&packet);
+			}
+		}
+		else {
+			nbytes = setupBaseFormat(&packet, ident & ~VCAN_EXT_MSG_ID,
+			                         m->length & 0x0f, transId);
+			if (flags & VCAN_MSG_FLAG_REMOTE_FRAME) {
+				setRemoteRequest(&packet);
+			}
+		}
 
-    setAckRequest(&packet);
+		setAckRequest(&packet);
 
-    if (flags & VCAN_MSG_FLAG_TXRQ) {
-      setTxRequest(&packet);
-    }
+		if (flags & VCAN_MSG_FLAG_TXRQ) {
+			setTxRequest(&packet);
+		}
 
-    if (ident & VCAN_EXT_MSG_ID) { /* Extended CAN */
-      setExtendedId(&packet);
-    }
+		if (ident & VCAN_EXT_MSG_ID) { /* Extended CAN */
+			setExtendedId(&packet);
+		}
 
-    if (flags & VCAN_MSG_FLAG_SINGLE_SHOT) {
-      setSingleShotMode(&packet);
-    }
+		if (flags & VCAN_MSG_FLAG_SINGLE_SHOT) {
+			setSingleShotMode(&packet);
+		}
 
-    memcpy(packet.data, msg, nbytes);
+		memcpy(packet.data, msg, nbytes);
 
-    spin_lock_irqsave(&hChd->lock, irqFlags);
+		spin_lock_irqsave(&hChd->lock, irqFlags);
 
-    if (vChd->errorCount > 0) {
-      pciCanResetErrorCounter(vChd);
-    }
+		if (vChd->errorCount > 0) {
+			pciCanResetErrorCounter(vChd);
+		}
 
-    // Write packet to transmit buffer
-    // This region must be done locked
-    writeFIFO(vChd, &packet);
+		// Write packet to transmit buffer
+		// This region must be done locked
+		writeFIFO(vChd, &packet);
 
-    ++hChd->debug.tx_packet_count;
-  }
+		++hChd->debug.tx_packet_count;
+	}
 
-  spin_unlock_irqrestore(&hChd->lock, irqFlags);
+	spin_unlock_irqrestore(&hChd->lock, irqFlags);
 
-  // Update transId after we know QCmd() was succesful!
-  if (transId + 1 > MAX_OUTSTANDING_TX) {
-    DEBUGPRINT(4, "transId = %d (%p), rewind\n", transId, &vChd->transId);
-    atomic_set(&vChd->transId, 1);
-  }
-  else {
-    DEBUGPRINT(4, "transId = %d (%p), add\n", transId, &vChd->transId);
-    atomic_add(1, &vChd->transId);
-  }
+	// Update transId after we know QCmd() was succesful!
+	if (transId + 1 > MAX_OUTSTANDING_TX) {
+		DEBUGPRINT(4, "transId = %d (%p), rewind\n", transId, &vChd->transId);
+		atomic_set(&vChd->transId, 1);
+	}
+	else {
+		DEBUGPRINT(4, "transId = %d (%p), add\n", transId, &vChd->transId);
+		atomic_add(1, &vChd->transId);
+	}
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 } // pciCanTransmitMessage
 
+//======================================================================
+//  Read transmit error counter
+//======================================================================
+static int pciCanGetTxErr(VCanChanData* vChd)
+{
+	pciCanRequestChipState(vChd);
+	return vChd->chipState.txerr;
+}
 
 //======================================================================
 //  Read transmit error counter
 //======================================================================
-static int pciCanGetTxErr (VCanChanData *vChd)
+static int pciCanGetRxErr(VCanChanData* vChd)
 {
-  pciCanRequestChipState(vChd);
-  return vChd->chipState.txerr;
+	pciCanRequestChipState(vChd);
+	return vChd->chipState.rxerr;
 }
-
-
-//======================================================================
-//  Read transmit error counter
-//======================================================================
-static int pciCanGetRxErr (VCanChanData *vChd)
-{
-  pciCanRequestChipState(vChd);
-  return vChd->chipState.rxerr;
-}
-
-
-
 
 //======================================================================
 //  Read transmit queue length in hardware/firmware
 //======================================================================
-static unsigned long pciCanTxQLen (VCanChanData *vChd)
+static unsigned long pciCanTxQLen(VCanChanData* vChd)
 {
-  PciCanChanData *hChd  = vChd->hwChanData;
+	PciCanChanData* hChd = vChd->hwChanData;
 
-  return atomic_read(&hChd->outstanding_tx);
+	return atomic_read(&hChd->outstanding_tx);
 }
-
 
 //======================================================================
 //  Clear send buffer on card
 //======================================================================
-static int pciCanFlushSendBuffer (VCanChanData *vChd)
+static int pciCanFlushSendBuffer(VCanChanData* vChd)
 {
-  PciCanChanData *hChd  = vChd->hwChanData;
-  unsigned long   irqFlags;
-  unsigned int tmp;
-  int loopcount = 100;
+	PciCanChanData* hChd = vChd->hwChanData;
+	unsigned long irqFlags;
+	unsigned int tmp;
+	int loopcount = 100;
 
-  wait_for_completion(&hChd->busOnCompletion);
+	wait_for_completion(&hChd->busOnCompletion);
 
-  spin_lock_irqsave(&hChd->lock, irqFlags);
+	spin_lock_irqsave(&hChd->lock, irqFlags);
 
-  atomic_set(&hChd->outstanding_tx, 0);
+	atomic_set(&hChd->outstanding_tx, 0);
 
-  DEBUGPRINT(4,"Note: Flush Transmit fifo CH:%u\n",vChd->channel);
+	DEBUGPRINT(4, "Note: Flush Transmit fifo CH:%u\n", vChd->channel);
 
-  // Clear tx flush done irq flag
-  irqClear(hChd->canControllerBase, PCIEFD_IRQ_TFD_MSK);
+	// Clear tx flush done irq flag
+	irqClear(hChd->canControllerBase, PCIEFD_IRQ_TFD_MSK);
 
-  // Flush Transmit HW Buffer
-  fpgaFlushTransmit(hChd->canControllerBase);
+	// Flush Transmit HW Buffer
+	fpgaFlushTransmit(hChd->canControllerBase);
 
-  spin_unlock_irqrestore(&hChd->lock, irqFlags);
+	spin_unlock_irqrestore(&hChd->lock, irqFlags);
 
-  while (loopcount)
-    {
-      if(istatCheck(hChd->canControllerBase, PCIEFD_IRQ_TFD_MSK))
-        {
-          DEBUGPRINT(4,"Tx Flush Done CH:%u\n",vChd->channel);
-          break;
-        }
+	while (loopcount) {
+		if (istatCheck(hChd->canControllerBase, PCIEFD_IRQ_TFD_MSK)) {
+			DEBUGPRINT(4, "Tx Flush Done CH:%u\n", vChd->channel);
+			break;
+		}
 
-      DEBUGPRINT(4,"Tx Flush Busy CH:%u\n",vChd->channel);
+		DEBUGPRINT(4, "Tx Flush Busy CH:%u\n", vChd->channel);
 
-      set_current_state(TASK_UNINTERRUPTIBLE);
-      schedule_timeout(msecs_to_jiffies(1)); // Wait 1 ms for transceiver to reach bus on
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(msecs_to_jiffies(
+		        1)); // Wait 1 ms for transceiver to reach bus on
 
-      if (statAbortRequest(hChd->canControllerBase))
-        {
-          DEBUGPRINT(3,"Warning: Abort req is asserted CH:%u\n",vChd->channel);
-        }
+		if (statAbortRequest(hChd->canControllerBase)) {
+			DEBUGPRINT(3, "Warning: Abort req is asserted CH:%u\n",
+			           vChd->channel);
+		}
 
-      if (vChd->vCard->cardPresent) {
-        --loopcount;
-      } else {
-        return VCAN_STAT_OK;
-      }
-    }
+		if (vChd->vCard->cardPresent) {
+			--loopcount;
+		}
+		else {
+			return VCAN_STAT_OK;
+		}
+	}
 
-  if(!loopcount)
-    {
-      DEBUGPRINT(1,"Tx Flush Still Busy? Loopmax reached CH:%u\n",vChd->channel);
-    }
+	if (!loopcount) {
+		DEBUGPRINT(1, "Tx Flush Still Busy? Loopmax reached CH:%u\n",
+		           vChd->channel);
+	}
 
-  tmp = IORD_PCIEFD_ISTAT(hChd->canControllerBase);
+	tmp = IORD_PCIEFD_ISTAT(hChd->canControllerBase);
 
-  if(!istatCheck(hChd->canControllerBase, PCIEFD_IRQ_TFD_MSK))
-    {
-      DEBUGPRINT(1,"Tx Flush Still Busy, probably failed initiating CH:%u\n",vChd->channel);
-    }
+	if (!istatCheck(hChd->canControllerBase, PCIEFD_IRQ_TFD_MSK)) {
+		DEBUGPRINT(1, "Tx Flush Still Busy, probably failed initiating CH:%u\n",
+		           vChd->channel);
+	}
 
-  DEBUGPRINT(4,"Note: Flush Transmit fifo start CH:%u\n",vChd->channel);
+	DEBUGPRINT(4, "Note: Flush Transmit fifo start CH:%u\n", vChd->channel);
 
-  if (statAbortRequest(hChd->canControllerBase))
-    {
-      DEBUGPRINT(1,"Flush: Abort_Req  CH:%u\n",vChd->channel);
-    }
-  else if (statFlushRequest(hChd->canControllerBase))
-    {
-      DEBUGPRINT(1,"Flush: Tx_Flush_Req CH:%u\n",vChd->channel);
-    }
+	if (statAbortRequest(hChd->canControllerBase)) {
+		DEBUGPRINT(1, "Flush: Abort_Req  CH:%u\n", vChd->channel);
+	}
+	else if (statFlushRequest(hChd->canControllerBase)) {
+		DEBUGPRINT(1, "Flush: Tx_Flush_Req CH:%u\n", vChd->channel);
+	}
 
-  loopcount = 10;
-  while(loopcount)
-    {
-      uint32_t level;
+	loopcount = 10;
+	while (loopcount) {
+		uint32_t level;
 
-      level = fifoPacketCountTx(hChd->canControllerBase);
+		level = fifoPacketCountTx(hChd->canControllerBase);
 
-      if(level == 0) {
-        break;
-      }
+		if (level == 0) {
+			break;
+		}
 
-      set_current_state(TASK_UNINTERRUPTIBLE);
-      schedule_timeout(msecs_to_jiffies(1)); // Wait 1 ms
+		set_current_state(TASK_UNINTERRUPTIBLE);
+		schedule_timeout(msecs_to_jiffies(1)); // Wait 1 ms
 
-      if (vChd->vCard->cardPresent) {
-        --loopcount;
-      } else {
-        return VCAN_STAT_OK;
-      }
-    }
+		if (vChd->vCard->cardPresent) {
+			--loopcount;
+		}
+		else {
+			return VCAN_STAT_OK;
+		}
+	}
 
-  if(loopcount == 0)
-    {
-      DEBUGPRINT(1,"Warning: Transmit buffer is not empty. Probably a failed flush operation [FLUSH]\n");
-    }
+	if (loopcount == 0) {
+		DEBUGPRINT(1, "Warning: Transmit buffer is not empty. Probably a "
+		              "failed flush operation [FLUSH]\n");
+	}
 
+	// Write a flush recovery control word
+	IOWR_PCIEFD_CONTROL(hChd->canControllerBase, PCIEFD_CONTROL_END_FLUSH);
 
-  // Write a flush recovery control word
-  IOWR_PCIEFD_CONTROL(hChd->canControllerBase, PCIEFD_CONTROL_END_FLUSH);
+	queue_reinit(&vChd->txChanQueue);
 
-  queue_reinit(&vChd->txChanQueue);
+	complete(&hChd->busOnCompletion);
 
-  complete(&hChd->busOnCompletion);
-
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 }
-
 
 //======================================================================
 //  Initialize H/W
 //  This is only called before a card is initialized, so no one can
 //  interfere with the accesses.
 //======================================================================
-static int pciCanInitHW (VCanCardData *vCard)
+static int pciCanInitHW(VCanCardData* vCard)
 {
-  int             chNr;
-  PciCanCardData  *hCard = vCard->hwCardData;
-  unsigned long   irqFlags;
+	int chNr;
+	PciCanCardData* hCard = vCard->hwCardData;
+	unsigned long irqFlags;
 
-  // The card must be present!
-  if (!vCard->cardPresent) {
-    DEBUGPRINT(1, "Error: The card must be present!\n");
-    return VCAN_STAT_NO_DEVICE;
-  }
+	// The card must be present!
+	if (!vCard->cardPresent) {
+		DEBUGPRINT(1, "Error: The card must be present!\n");
+		return VCAN_STAT_NO_DEVICE;
+	}
 
-  if ( !hCard->pcieBar0Base ) {
-    DEBUGPRINT(1, "Error: In address!\n");
-    vCard->cardPresent = 0;
-    return VCAN_STAT_FAIL;
-  }
+	if (!hCard->pcieBar0Base) {
+		DEBUGPRINT(1, "Error: In address!\n");
+		vCard->cardPresent = 0;
+		return VCAN_STAT_FAIL;
+	}
 
-  for (chNr = 0; chNr < vCard->nrChannels; chNr++){
-    VCanChanData   *vChd = vCard->chanData[chNr];
-    PciCanChanData *hChd = vChd->hwChanData;
-    void __iomem *addr = hChd->canControllerBase;
-    uint32_t mode;
+	for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
+		VCanChanData* vChd = vCard->chanData[chNr];
+		PciCanChanData* hChd = vChd->hwChanData;
+		void __iomem* addr = hChd->canControllerBase;
+		uint32_t mode;
 
-    if (!addr) {
-      return VCAN_STAT_FAIL;
-    }
+		if (!addr) {
+			return VCAN_STAT_FAIL;
+		}
 
-    // Is this lock neccessary? See comment in function header.
-    spin_lock_irqsave(&hChd->lock, irqFlags);
+		// Is this lock neccessary? See comment in function header.
+		spin_lock_irqsave(&hChd->lock, irqFlags);
 
-    // Default 125 kbit/s, 75%
-    IOWR_PCIEFD_BTRN(addr, PCIEFD_BTR_SEG2(4-1)
-                     | PCIEFD_BTR_SEG1(11-1)
-                     | PCIEFD_BTR_SJW(2)
-                     | PCIEFD_BTR_BRP(32-1));
+		// Default 125 kbit/s, 75%
+		IOWR_PCIEFD_BTRN(addr,
+		                 PCIEFD_BTR_SEG2(4 - 1) | PCIEFD_BTR_SEG1(11 - 1) |
+		                         PCIEFD_BTR_SJW(2) | PCIEFD_BTR_BRP(32 - 1));
 
-    if(hwSupportCanFD(hChd->canControllerBase))
-      {
-        // CAN FD
-        IOWR_PCIEFD_BTRD(addr, PCIEFD_BTR_SEG2(4-1)
-                         | PCIEFD_BTR_SEG1(11-1)
-                         | PCIEFD_BTR_SJW(2)
-                         | PCIEFD_BTR_BRP(32-1));
-      }
+		if (hwSupportCanFD(hChd->canControllerBase)) {
+			// CAN FD
+			IOWR_PCIEFD_BTRD(
+			        addr, PCIEFD_BTR_SEG2(4 - 1) | PCIEFD_BTR_SEG1(11 - 1) |
+			                      PCIEFD_BTR_SJW(2) | PCIEFD_BTR_BRP(32 - 1));
+		}
 
-    // Disable bus load calculation
-    IOWR_PCIEFD_BLP(addr, 0);
+		// Disable bus load calculation
+		IOWR_PCIEFD_BLP(addr, 0);
 
-    mode = PCIEFD_MOD_EWL(96) // Set the EWL value
-      | PCIEFD_MOD_CHANNEL(chNr)
-      | PCIEFD_MOD_EEN(1)
-      | PCIEFD_MOD_EPEN(1) // Error packets are received
-      | PCIEFD_MOD_RM_MSK    // Reset the circuit.
-      | PCIEFD_MOD_DWH(1);
+		mode = PCIEFD_MOD_EWL(96) // Set the EWL value
+		       | PCIEFD_MOD_CHANNEL(chNr) | PCIEFD_MOD_EEN(1) |
+		       PCIEFD_MOD_EPEN(1)  // Error packets are received
+		       | PCIEFD_MOD_RM_MSK // Reset the circuit.
+		       | PCIEFD_MOD_DWH(1);
 
-    IOWR_PCIEFD_MOD(addr, mode);
+		IOWR_PCIEFD_MOD(addr, mode);
 
-    // Flush and reset
-    fpgaFlushAll(hChd->canControllerBase, 0);
+		// Flush and reset
+		fpgaFlushAll(hChd->canControllerBase, 0);
 
-    // Disable receiver interrupt
-    irqInit(hChd->canControllerBase);
+		// Disable receiver interrupt
+		irqInit(hChd->canControllerBase);
 
-    ledOff(hChd->canControllerBase);
+		ledOff(hChd->canControllerBase);
 
-    spin_unlock_irqrestore(&hChd->lock, irqFlags);
-  }
+		spin_unlock_irqrestore(&hChd->lock, irqFlags);
+	}
 
-  {
-    uint32_t level;
+	{
+		uint32_t level;
 
-    level = fifoPacketCountRx(hCard->canRxBuffer);
-    if(level) {
-      int to;
+		level = fifoPacketCountRx(hCard->canRxBuffer);
+		if (level) {
+			int to;
 
-      DEBUGPRINT(3,"RX FIFO Has %u old packets\n", level);
+			DEBUGPRINT(3, "RX FIFO Has %u old packets\n", level);
 
-      to = (level < 200) ? level : 200;
+			to = (level < 200) ? level : 200;
 
-      while(to && level)
-        {
-          pciefd_packet_t packet;
-          // Reset FIFO
-          IOWR_RXBUF_CMD(hCard->canRxBuffer, RXBUF_CMD_RESET_MSK);
+			while (to && level) {
+				pciefd_packet_t packet;
+				// Reset FIFO
+				IOWR_RXBUF_CMD(hCard->canRxBuffer, RXBUF_CMD_RESET_MSK);
 
-          readFIFO(vCard, &packet);
+				readFIFO(vCard, &packet);
 
-          level = fifoPacketCountRx(hCard->canRxBuffer);
-          --to;
-        }
-    }
-  }
+				level = fifoPacketCountRx(hCard->canRxBuffer);
+				--to;
+			}
+		}
+	}
 
-  fifoIrqInit(hCard->canRxBuffer);
-  fifoIrqEnableUnderflow(hCard->canRxBuffer);
+	fifoIrqInit(hCard->canRxBuffer);
+	fifoIrqEnableUnderflow(hCard->canRxBuffer);
 
-  // Enable interrupts from card
-  // Use Altera PCIe Enpoint Interrupt Handling
-  pciCanInterrupts(vCard, 1);
+	// Enable interrupts from card
+	// Use Altera PCIe Enpoint Interrupt Handling
+	pciCanInterrupts(vCard, 1);
 
-  DEBUGPRINT(3, "pciefd: hw initialized. \n");
+	DEBUGPRINT(3, "pciefd: hw initialized. \n");
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 }
-
 
 //======================================================================
 //  Find out addresses for one card
 //======================================================================
-static int readPCIAddresses (struct pci_dev *dev, VCanCardData *vCard)
+static int readPCIAddresses(struct pci_dev* dev, VCanCardData* vCard)
 {
-  PciCanCardData *hCard = vCard->hwCardData;
-  int i;
+	PciCanCardData* hCard = vCard->hwCardData;
+	int i;
 
-  if (pci_request_regions(dev, "Kvaser PCIe CAN")) {
-    DEBUGPRINT(1, "request regions failed\n");
-    return VCAN_STAT_FAIL;
-  }
+	if (pci_request_regions(dev, "Kvaser PCIe CAN")) {
+		DEBUGPRINT(1, "request regions failed\n");
+		return VCAN_STAT_FAIL;
+	}
 
-  if (pci_enable_device(dev)){
-    DEBUGPRINT(1, "enable device failed\n");
-    pci_release_regions(dev);
-    return VCAN_STAT_NO_DEVICE;
-  }
+	if (pci_enable_device(dev)) {
+		DEBUGPRINT(1, "enable device failed\n");
+		pci_release_regions(dev);
+		return VCAN_STAT_NO_DEVICE;
+	}
 
-  for (i = 0; i < 2; i++) {
-    unsigned long bar_start = pci_resource_start(dev, i);
-    if (bar_start) {
-      unsigned long bar_end = pci_resource_end(dev, i);
-      unsigned long bar_flags = pci_resource_flags(dev, i);
-      DEBUGPRINT(3, "BAR%d 0x%08lx-0x%08lx flags 0x%08lx\n",
-                 i, bar_start, bar_end, bar_flags);
-      if (bar_flags & IORESOURCE_IO) DEBUGPRINT(3,"IO resource flag\n");
-      if (bar_flags & IORESOURCE_MEM) DEBUGPRINT(3,"Memory resource flag\n");
-      if (bar_flags & IORESOURCE_PREFETCH) DEBUGPRINT(3,"Prefetch flag\n");
-      if (bar_flags & IORESOURCE_READONLY) DEBUGPRINT(3,"Readonly flag\n");
-    }
-  }
+	for (i = 0; i < 2; i++) {
+		unsigned long bar_start = pci_resource_start(dev, i);
+		if (bar_start) {
+			unsigned long bar_end = pci_resource_end(dev, i);
+			unsigned long bar_flags = pci_resource_flags(dev, i);
+			DEBUGPRINT(3, "BAR%d 0x%08lx-0x%08lx flags 0x%08lx\n", i, bar_start,
+			           bar_end, bar_flags);
+			if (bar_flags & IORESOURCE_IO)
+				DEBUGPRINT(3, "IO resource flag\n");
+			if (bar_flags & IORESOURCE_MEM)
+				DEBUGPRINT(3, "Memory resource flag\n");
+			if (bar_flags & IORESOURCE_PREFETCH)
+				DEBUGPRINT(3, "Prefetch flag\n");
+			if (bar_flags & IORESOURCE_READONLY)
+				DEBUGPRINT(3, "Readonly flag\n");
+		}
+	}
 
-  hCard->irq          = dev->irq;
-  hCard->pcieBar0Base = pci_iomap(dev, 0, 0);
+	hCard->irq = dev->irq;
+	hCard->pcieBar0Base = pci_iomap(dev, 0, 0);
 
-  if ( !hCard->pcieBar0Base ) {
-    DEBUGPRINT(1, "pci_iomap failed\n");
-    pci_disable_device(dev);
-    pci_release_regions(dev);
-    return VCAN_STAT_FAIL;
-  }
+	if (!hCard->pcieBar0Base) {
+		DEBUGPRINT(1, "pci_iomap failed\n");
+		pci_disable_device(dev);
+		pci_release_regions(dev);
+		return VCAN_STAT_FAIL;
+	}
 
-  // Init FPGA bus system base addresses
-  hCard->canControllerBase         = OFFSET_FROM_BASE(hCard->pcieBar0Base, CAN_CONTROLLER_0_BASE);
+	// Init FPGA bus system base addresses
+	hCard->canControllerBase =
+	        OFFSET_FROM_BASE(hCard->pcieBar0Base, CAN_CONTROLLER_0_BASE);
 
-  hCard->timestampBase             = OFFSET_FROM_BASE(hCard->pcieBar0Base, TIMESTAMP_BASE);
-  hCard->serialFlashBase           = OFFSET_FROM_BASE(hCard->pcieBar0Base, SERIALFLASH_BASE);
-  hCard->sysidBase                 = OFFSET_FROM_BASE(hCard->pcieBar0Base, SYSID_BASE);
+	hCard->timestampBase =
+	        OFFSET_FROM_BASE(hCard->pcieBar0Base, TIMESTAMP_BASE);
+	hCard->serialFlashBase =
+	        OFFSET_FROM_BASE(hCard->pcieBar0Base, SERIALFLASH_BASE);
+	hCard->sysidBase = OFFSET_FROM_BASE(hCard->pcieBar0Base, SYSID_BASE);
 #if USE_ADJUSTABLE_PLL
-  hCard->pllBase                   = OFFSET_FROM_BASE(hCard->pcieBar0Base, PLL_BASE);
+	hCard->pllBase = OFFSET_FROM_BASE(hCard->pcieBar0Base, PLL_BASE);
 #endif
-  hCard->pcie                      = OFFSET_FROM_BASE(hCard->pcieBar0Base, PCIE_HARD_IP_BASE);
+	hCard->pcie = OFFSET_FROM_BASE(hCard->pcieBar0Base, PCIE_HARD_IP_BASE);
 
-  hCard->canRxBuffer               = OFFSET_FROM_BASE(hCard->pcieBar0Base, RECEIVE_BUFFER_BASE);
-  hCard->busAnalyzerBase           = OFFSET_FROM_BASE(hCard->pcieBar0Base, BUS_ANALYZER_BASE);
+	hCard->canRxBuffer =
+	        OFFSET_FROM_BASE(hCard->pcieBar0Base, RECEIVE_BUFFER_BASE);
+	hCard->busAnalyzerBase =
+	        OFFSET_FROM_BASE(hCard->pcieBar0Base, BUS_ANALYZER_BASE);
 
-  hCard->patternGeneratorBase      = OFFSET_FROM_BASE(hCard->pcieBar0Base, PATTERN_GEN_BASE);
-  hCard->statusStreamSwitchBase    = OFFSET_FROM_BASE(hCard->pcieBar0Base, STATUS_SWITCH_BASE);
+	hCard->patternGeneratorBase =
+	        OFFSET_FROM_BASE(hCard->pcieBar0Base, PATTERN_GEN_BASE);
+	hCard->statusStreamSwitchBase =
+	        OFFSET_FROM_BASE(hCard->pcieBar0Base, STATUS_SWITCH_BASE);
 
-  DEBUGPRINT(2, "irq:%d pcieBar0Base:%lx\n", hCard->irq, (long)hCard->pcieBar0Base);
+	DEBUGPRINT(2, "irq:%d pcieBar0Base:%lx\n", hCard->irq,
+	           (long) hCard->pcieBar0Base);
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 }
-
 
 //======================================================================
 // Request send
 //======================================================================
-void pciCanRequestSend (VCanCardData *vCard, VCanChanData *vChd)
+void pciCanRequestSend(VCanCardData* vCard, VCanChanData* vChd)
 {
-  PciCanChanData *hChan = vChd->hwChanData;
+	PciCanChanData* hChan = vChd->hwChanData;
 
-  if (pciCanTxAvailable(vChd)){
+	if (pciCanTxAvailable(vChd)) {
 #if !defined(TRY_RT_QUEUE)
-    schedule_work(&hChan->txTaskQ);
+		schedule_work(&hChan->txTaskQ);
 #else
-    queue_work(hChan->txTaskQ, &hChan->txWork);
+		queue_work(hChan->txTaskQ, &hChan->txWork);
 #endif
-  }
+	}
 #if DEBUG
-  else {
-    DEBUGPRINT(4, "SEND FAILED \n");
-  }
+	else {
+		DEBUGPRINT(4, "SEND FAILED \n");
+	}
 #endif
 }
-
 
 //======================================================================
 //  Process send Q - This function is called from the immediate queue
 //  From pcicanII
 //======================================================================
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
-static void pciCanSend (void *void_chanData)
+static void pciCanSend(void* void_chanData)
 #else
-  static void pciCanSend (struct work_struct *work)
+static void pciCanSend(struct work_struct* work)
 #endif
 {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20)
-  VCanChanData *chd = (VCanChanData *)void_chanData;
+	VCanChanData* chd = (VCanChanData*) void_chanData;
 #else
-# if !defined(TRY_RT_QUEUE)
-  PciCanChanData *devChan = container_of(work, PciCanChanData, txTaskQ);
-# else
-  PciCanChanData *devChan = container_of(work, PciCanChanData, txWork);
-# endif
-  VCanChanData   *chd = devChan->vChan;
+#	if !defined(TRY_RT_QUEUE)
+	PciCanChanData* devChan = container_of(work, PciCanChanData, txTaskQ);
+#	else
+	PciCanChanData* devChan = container_of(work, PciCanChanData, txWork);
+#	endif
+	VCanChanData* chd = devChan->vChan;
 #endif
-  int queuePos;
+	int queuePos;
 
-  wait_for_completion(&devChan->busOnCompletion);
+	wait_for_completion(&devChan->busOnCompletion);
 
-  while (1) {
-    if (!chd->isOnBus) {
-      DEBUGPRINT(4, "Attempt to send when not on bus\n");
-      break;
-    }
-    
-    if (chd->minorNr < 0) {  // Channel not initialized?
-      DEBUGPRINT(1, "Attempt to send on unitialized channel\n");
-      break;
-    }
-    
-    if (!pciCanTxAvailable(chd)) {
-      DEBUGPRINT(4, "Maximum number of messages outstanding reached\n");
-      break;
-    }
-    
-    // Send Messages
-    queuePos = queue_front(&chd->txChanQueue);
-    if (queuePos >= 0) {
-      if (pciCanTransmitMessage(chd, &chd->txChanBuffer[queuePos]) == VCAN_STAT_OK) {
-        queue_pop(&chd->txChanQueue);
-        queue_wakeup_on_space(&chd->txChanQueue);
-      } else {
-        queue_release(&chd->txChanQueue);
-        break;
-      }
-    } else {
-      queue_release(&chd->txChanQueue);
-      break;
-    }
-  }
+	while (1) {
+		if (!chd->isOnBus) {
+			DEBUGPRINT(4, "Attempt to send when not on bus\n");
+			break;
+		}
 
-  complete(&devChan->busOnCompletion);
+		if (chd->minorNr < 0) { // Channel not initialized?
+			DEBUGPRINT(1, "Attempt to send on unitialized channel\n");
+			break;
+		}
+
+		if (!pciCanTxAvailable(chd)) {
+			DEBUGPRINT(4, "Maximum number of messages outstanding reached\n");
+			break;
+		}
+
+		// Send Messages
+		queuePos = queue_front(&chd->txChanQueue);
+		if (queuePos >= 0) {
+			if (pciCanTransmitMessage(chd, &chd->txChanBuffer[queuePos]) ==
+			    VCAN_STAT_OK) {
+				queue_pop(&chd->txChanQueue);
+				queue_wakeup_on_space(&chd->txChanQueue);
+			}
+			else {
+				queue_release(&chd->txChanQueue);
+				break;
+			}
+		}
+		else {
+			queue_release(&chd->txChanQueue);
+			break;
+		}
+	}
+
+	complete(&devChan->busOnCompletion);
 }
 
 //======================================================================
 //  Initialize H/W specific data
 //======================================================================
-static void pciCanInitData (VCanCardData *vCard)
+static void pciCanInitData(VCanCardData* vCard)
 {
-  int chNr;
-  PciCanCardData *hCard = vCard->hwCardData;
+	int chNr;
+	PciCanCardData* hCard = vCard->hwCardData;
 
-  vCard->driverData = &driverData;
-  vCanInitData(vCard);
+	vCard->driverData = &driverData;
+	vCanInitData(vCard);
 
-  for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
-    VCanChanData *vChd = vCard->chanData[chNr];
-    queue_irq_lock(&vChd->txChanQueue);
-  }
+	for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
+		VCanChanData* vChd = vCard->chanData[chNr];
+		queue_irq_lock(&vChd->txChanQueue);
+	}
 
-  INIT_LIST_HEAD(&hCard->replyWaitList);
+	INIT_LIST_HEAD(&hCard->replyWaitList);
 
-  rwlock_init(&hCard->replyWaitListLock);
-  spin_lock_init(&hCard->lock);
+	rwlock_init(&hCard->replyWaitListLock);
+	spin_lock_init(&hCard->lock);
 
-  hCard->last_ts = 0;
-  atomic_set(&hCard->status_seq_no, 0);
+	hCard->last_ts = 0;
+	atomic_set(&hCard->status_seq_no, 0);
 
-  for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
-    VCanChanData *vChd   = vCard->chanData[chNr];
-    PciCanChanData *hChd = vCard->chanData[chNr]->hwChanData;
+	for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
+		VCanChanData* vChd = vCard->chanData[chNr];
+		PciCanChanData* hChd = vCard->chanData[chNr]->hwChanData;
 #if !defined(TRY_RT_QUEUE)
-    spin_lock_init(&hChd->lock);
-    hChd->vChan = vChd;
-# if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20))
-    INIT_WORK(&hChd->txTaskQ, pciCanSend, vChd);
-# else
-    INIT_WORK(&hChd->txTaskQ, pciCanSend);
-# endif
+		spin_lock_init(&hChd->lock);
+		hChd->vChan = vChd;
+#	if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20))
+		INIT_WORK(&hChd->txTaskQ, pciCanSend, vChd);
+#	else
+		INIT_WORK(&hChd->txTaskQ, pciCanSend);
+#	endif
 #else
-    char name[] = "pcican_txX";
-    name[9]     = '0' + chNr;   // Replace the X with channel number
-    spin_lock_init(&hChd->lock);
-    hChd->vChan = vChd;
-# if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20))
-    INIT_WORK(&hChd->txWork, pciCanSend, vChd);
-# else
-    INIT_WORK(&hChd->txWork, pciCanSend);
-# endif
-    // Note that this will not create an RT task if the kernel
-    // does not actually support it (only 2.6.28+ do).
-    // In that case, you must (for now) do it manually using chrt.
-    hChd->txTaskQ = create_rt_workqueue(name, &hChd->txWork);
+		char name[] = "pcican_txX";
+		name[9] = '0' + chNr; // Replace the X with channel number
+		spin_lock_init(&hChd->lock);
+		hChd->vChan = vChd;
+#	if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 20))
+		INIT_WORK(&hChd->txWork, pciCanSend, vChd);
+#	else
+		INIT_WORK(&hChd->txWork, pciCanSend);
+#	endif
+		// Note that this will not create an RT task if the kernel
+		// does not actually support it (only 2.6.28+ do).
+		// In that case, you must (for now) do it manually using chrt.
+		hChd->txTaskQ = create_rt_workqueue(name, &hChd->txWork);
 #endif
 
-    memset(hChd->current_tx_message, 0, sizeof(hChd->current_tx_message));
-    atomic_set(&hChd->outstanding_tx, 0);
-    atomic_set(&vChd->transId, 1);
+		memset(hChd->current_tx_message, 0, sizeof(hChd->current_tx_message));
+		atomic_set(&hChd->outstanding_tx, 0);
+		atomic_set(&vChd->transId, 1);
 
-    vChd->overrun    = 0;
-    vChd->errorCount = 0;
-    hChd->overrun_occured = 0;
+		vChd->overrun = 0;
+		vChd->errorCount = 0;
+		hChd->overrun_occured = 0;
 
-    hChd->auto_sso = 1;
-    hChd->sso = 0;
+		hChd->auto_sso = 1;
+		hChd->sso = 0;
 
-    init_completion(&hChd->busOnCompletion);
-    complete(&hChd->busOnCompletion);
+		init_completion(&hChd->busOnCompletion);
+		complete(&hChd->busOnCompletion);
 
-    init_waitqueue_head(&hChd->hwFlushWaitQ);
-  }
+		init_waitqueue_head(&hChd->hwFlushWaitQ);
+	}
 }
-
 
 //======================================================================
 // Initialize the HW for one card
 //======================================================================
-static int pciCanInitOne (struct pci_dev *dev, const struct pci_device_id *id)
+static int pciCanInitOne(struct pci_dev* dev, const struct pci_device_id* id)
 {
-  // Helper struct for allocation
-  typedef struct {
-    VCanChanData *dataPtrArray[MAX_CARD_CHANNELS];
-    VCanChanData vChd[MAX_CARD_CHANNELS];
-    PciCanChanData hChd[MAX_CARD_CHANNELS];
-  } ChanHelperStruct;
+	// Helper struct for allocation
+	typedef struct {
+		VCanChanData* dataPtrArray[MAX_CARD_CHANNELS];
+		VCanChanData vChd[MAX_CARD_CHANNELS];
+		PciCanChanData hChd[MAX_CARD_CHANNELS];
+	} ChanHelperStruct;
 
-  ChanHelperStruct *chs;
-  PciCanCardData *hCard;
+	ChanHelperStruct* chs;
+	PciCanCardData* hCard;
 
-  int chNr;
-  VCanCardData *vCard;
+	int chNr;
+	VCanCardData* vCard;
 
-  DEBUGPRINT(3, "pciCanInitOne - max channels:%u\n", MAX_CARD_CHANNELS);
+	DEBUGPRINT(3, "pciCanInitOne - max channels:%u\n", MAX_CARD_CHANNELS);
 
-  // Allocate data area for this card
-  vCard = kmalloc(sizeof(VCanCardData) + sizeof(PciCanCardData), GFP_KERNEL);
-  if (!vCard) {
-    goto card_alloc_err;
-  }
-  memset(vCard, 0, sizeof(VCanCardData) + sizeof(PciCanCardData));
+	// Allocate data area for this card
+	vCard = kmalloc(sizeof(VCanCardData) + sizeof(PciCanCardData), GFP_KERNEL);
+	if (!vCard) {
+		goto card_alloc_err;
+	}
+	memset(vCard, 0, sizeof(VCanCardData) + sizeof(PciCanCardData));
 
-  // hwCardData is directly after VCanCardData
-  vCard->hwCardData = vCard + 1;
-  hCard = vCard->hwCardData;
+	// hwCardData is directly after VCanCardData
+	vCard->hwCardData = vCard + 1;
+	hCard = vCard->hwCardData;
 
-  hCard->dev = dev; // Needed for DMA mapping
+	hCard->dev = dev; // Needed for DMA mapping
 
-  // Allocate memory for n channels
-  chs = kmalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
-  if (!chs) {
-    goto chan_alloc_err;
-  }
-  memset(chs, 0, sizeof(ChanHelperStruct));
+	// Allocate memory for n channels
+	chs = kmalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
+	if (!chs) {
+		goto chan_alloc_err;
+	}
+	memset(chs, 0, sizeof(ChanHelperStruct));
 
-  // Init array and hwChanData
-  for (chNr = 0; chNr < MAX_CARD_CHANNELS; chNr++){
-    chs->dataPtrArray[chNr]    = &chs->vChd[chNr];
-    chs->vChd[chNr].hwChanData = &chs->hChd[chNr];
-    chs->vChd[chNr].minorNr    = -1;   // No preset minor number
-  }
-  vCard->chanData = chs->dataPtrArray;
+	// Init array and hwChanData
+	for (chNr = 0; chNr < MAX_CARD_CHANNELS; chNr++) {
+		chs->dataPtrArray[chNr] = &chs->vChd[chNr];
+		chs->vChd[chNr].hwChanData = &chs->hChd[chNr];
+		chs->vChd[chNr].minorNr = -1; // No preset minor number
+	}
+	vCard->chanData = chs->dataPtrArray;
 
-  // Get PCI controller and FPGA bus system addresses
-  if (readPCIAddresses(dev, vCard) != VCAN_STAT_OK) {
-    DEBUGPRINT(1, "readPCIAddresses failed\n");
-    goto pci_err;
-  }
+	// Get PCI controller and FPGA bus system addresses
+	if (readPCIAddresses(dev, vCard) != VCAN_STAT_OK) {
+		DEBUGPRINT(1, "readPCIAddresses failed\n");
+		goto pci_err;
+	}
 
-  // Find out type of card i.e. N/O channels etc
-  if (pciCanProbe(vCard) != VCAN_STAT_OK) {
-    DEBUGPRINT(1, "pciCanProbe failed\n");
-    goto probe_err;
-  }
+	// Find out type of card i.e. N/O channels etc
+	if (pciCanProbe(vCard) != VCAN_STAT_OK) {
+		DEBUGPRINT(1, "pciCanProbe failed\n");
+		goto probe_err;
+	}
 
-  // Init channels
-  pciCanInitData(vCard);
+	// Init channels
+	pciCanInitData(vCard);
 
-  pci_set_drvdata(dev, vCard);
+	pci_set_drvdata(dev, vCard);
 
-  if (request_irq(hCard->irq, pciCanInterrupt,
+	if (request_irq(hCard->irq, pciCanInterrupt,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 18))
-                  SA_SHIRQ,
+	                SA_SHIRQ,
 #else
-                  IRQF_SHARED,
+	                IRQF_SHARED,
 #endif
-                  "Kvaser PCIe CAN", vCard)) {
-    DEBUGPRINT(1, "request_irq failed\n");
-    goto irq_err;
-  }
+	                "Kvaser PCIe CAN", vCard)) {
+		DEBUGPRINT(1, "request_irq failed\n");
+		goto irq_err;
+	}
 
 #if USE_DMA
-  // Setup DMA
-  if(hCard->useDma && dmaInit(vCard))
-    {
-      DEBUGPRINT(3, "dmaInit failed\n");
-      hCard->useDma = 0;
-    }
+	// Setup DMA
+	if (hCard->useDma && dmaInit(vCard)) {
+		DEBUGPRINT(3, "dmaInit failed\n");
+		hCard->useDma = 0;
+	}
 #endif
 
-  // Init h/w & enable interrupts in PCI Interface
-  if (pciCanInitHW(vCard) != VCAN_STAT_OK) {
-    DEBUGPRINT(1, "pciCanInitHW failed\n");
-    goto inithw_err;
-  }
+	// Init h/w & enable interrupts in PCI Interface
+	if (pciCanInitHW(vCard) != VCAN_STAT_OK) {
+		DEBUGPRINT(1, "pciCanInitHW failed\n");
+		goto inithw_err;
+	}
 
-  // Activate all channels
-  for (chNr = 0; chNr < vCard->nrChannels; chNr++){
-    VCanChanData *vChd = vCard->chanData[chNr];
-    pciCanActivateTransceiver(vChd, vChd->lineMode);
+	// Activate all channels
+	for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
+		VCanChanData* vChd = vCard->chanData[chNr];
+		pciCanActivateTransceiver(vChd, vChd->lineMode);
 
-    // Initialize with valid bus params (0.5 Mbit/s and 2.0 Mbit/s). Values are copied from
-    // canTranslateBaud() in 'canlib.c'. If bus parameters are not initialized here it is not possible
-    // to set CAN baud rate before CAN FD baudrate due to the prescaler check for CAN FD.
-    {
-      VCanBusParams busParams =
-        {.freq     = 500*1000,    .tseg1     = 5U,  .tseg2     = 2U, .sjw     = 1U, .samp3  = 1U,
-         .freq_brs = 2*1000*1000, .tseg1_brs = 15U, .tseg2_brs = 4U, .sjw_brs = 4U, };
+		// Initialize with valid bus params (0.5 Mbit/s and 2.0 Mbit/s). Values
+		// are copied from canTranslateBaud() in 'canlib.c'. If bus parameters
+		// are not initialized here it is not possible to set CAN baud rate
+		// before CAN FD baudrate due to the prescaler check for CAN FD.
+		{
+			VCanBusParams busParams = {
+			        .freq = 500 * 1000,
+			        .tseg1 = 5U,
+			        .tseg2 = 2U,
+			        .sjw = 1U,
+			        .samp3 = 1U,
+			        .freq_brs = 2 * 1000 * 1000,
+			        .tseg1_brs = 15U,
+			        .tseg2_brs = 4U,
+			        .sjw_brs = 4U,
+			};
 
-      pciCanSetBusParams(vChd, &busParams);
-    }
-  }
+			pciCanSetBusParams(vChd, &busParams);
+		}
+	}
 
 #if USE_DMA
-  if( hCard->useDma && setupDmaMappings(vCard) )
-    {
-      DEBUGPRINT(3,"setupDmaMappings failed\n");
+	if (hCard->useDma && setupDmaMappings(vCard)) {
+		DEBUGPRINT(3, "setupDmaMappings failed\n");
 
-      hCard->useDma = 0;
-    }
+		hCard->useDma = 0;
+	}
 
-  if(hCard->useDma)
-    {
-      startDMA(vCard);
-    }
+	if (hCard->useDma) {
+		startDMA(vCard);
+	}
 
-  if(!hCard->useDma)
+	if (!hCard->useDma)
 #endif
-  {
-    fifoIrqEnableReceivedDataAvailable(hCard->canRxBuffer);
-    fifoIrqEnableMissingTag(hCard->canRxBuffer);
-  }
+	{
+		fifoIrqEnableReceivedDataAvailable(hCard->canRxBuffer);
+		fifoIrqEnableMissingTag(hCard->canRxBuffer);
+	}
 
-  set_current_state(TASK_UNINTERRUPTIBLE);
-  schedule_timeout(msecs_to_jiffies(5)); // Wait 5 ms for transceiver to power up
+	set_current_state(TASK_UNINTERRUPTIBLE);
+	schedule_timeout(
+	        msecs_to_jiffies(5)); // Wait 5 ms for transceiver to power up
 
-  // Insert into list of cards
-  spin_lock(&driverData.canCardsLock);
-  vCard->next = driverData.canCards;
-  driverData.canCards = vCard;
-  spin_unlock(&driverData.canCardsLock);
-
+	// Insert into list of cards
+	spin_lock(&driverData.canCardsLock);
+	vCard->next = driverData.canCards;
+	driverData.canCards = vCard;
+	spin_unlock(&driverData.canCardsLock);
 
 #if USE_DMA
-  if(hCard->useDma)
-    pci_set_master(dev);
+	if (hCard->useDma)
+		pci_set_master(dev);
 #endif
 
-  return VCAN_STAT_OK;
+	return VCAN_STAT_OK;
 
- inithw_err:
-  DEBUGPRINT(1,"inithw_err\n");
-  free_irq(hCard->irq, vCard);
- irq_err:
-  DEBUGPRINT(1,"irq_err\n");
-  pci_set_drvdata(dev, NULL);
-  DEBUGPRINT(3,"before loop\n");
+inithw_err:
+	DEBUGPRINT(1, "inithw_err\n");
+	free_irq(hCard->irq, vCard);
+irq_err:
+	DEBUGPRINT(1, "irq_err\n");
+	pci_set_drvdata(dev, NULL);
+	DEBUGPRINT(3, "before loop\n");
 #if defined(TRY_RT_QUEUE)
-  for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
-    PciCanChanData *hChd = vCard->chanData[chNr]->hwChanData;
-    destroy_workqueue(hChd->txTaskQ);
-  }
+	for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
+		PciCanChanData* hChd = vCard->chanData[chNr]->hwChanData;
+		destroy_workqueue(hChd->txTaskQ);
+	}
 #endif
-  DEBUGPRINT(3,"after loop\n");
+	DEBUGPRINT(3, "after loop\n");
 
+probe_err:
+	DEBUGPRINT(1, "probe_err\n");
+	pci_iounmap(dev, hCard->pcieBar0Base);
 
- probe_err:
-  DEBUGPRINT(1,"probe_err\n");
-  pci_iounmap(dev, hCard->pcieBar0Base);
+	DEBUGPRINT(1, "disble dev\n");
+	pci_disable_device(dev);
+	DEBUGPRINT(1, "release regions\n");
+	pci_release_regions(dev);
+pci_err:
+	DEBUGPRINT(1, "free chandata\n");
+	kfree(vCard->chanData);
+chan_alloc_err:
+	DEBUGPRINT(1, "free card\n");
+	kfree(vCard);
+card_alloc_err:
+	DEBUGPRINT(1, "done\n");
 
-  DEBUGPRINT(1,"disble dev\n");
-  pci_disable_device(dev);
-  DEBUGPRINT(1,"release regions\n");
-  pci_release_regions(dev);
- pci_err:
-  DEBUGPRINT(1,"free chandata\n");
-  kfree(vCard->chanData);
- chan_alloc_err:
-  DEBUGPRINT(1,"free card\n");
-  kfree(vCard);
- card_alloc_err:
-  DEBUGPRINT(1,"done\n");
-
-  return VCAN_STAT_FAIL;
+	return VCAN_STAT_FAIL;
 } // pciCanInitOne
-
 
 //======================================================================
 // Shut down the HW for one card
 //======================================================================
-static void pciCanRemoveOne (struct pci_dev *dev)
+static void pciCanRemoveOne(struct pci_dev* dev)
 {
-  VCanCardData *vCard, *lastCard;
-  PciCanCardData *hCard;
-  int chNr;
+	VCanCardData *vCard, *lastCard;
+	PciCanCardData* hCard;
+	int chNr;
 
-  DEBUGPRINT(3, "pciCanRemoveOne (0/8)\n");
+	DEBUGPRINT(3, "pciCanRemoveOne (0/8)\n");
 
-  vCard = pci_get_drvdata(dev);
+	vCard = pci_get_drvdata(dev);
 
-  DEBUGPRINT(3, "pciCanRemoveOne (1/8)\n");
+	DEBUGPRINT(3, "pciCanRemoveOne (1/8)\n");
 
-  hCard   = vCard->hwCardData;
+	hCard = vCard->hwCardData;
 
-  pciCanInterrupts(vCard,0);
+	pciCanInterrupts(vCard, 0);
 
 #if USE_DMA
-  if(hCard->useDma) {
-    stopDMA(vCard);
+	if (hCard->useDma) {
+		stopDMA(vCard);
 
-    pci_clear_master(dev);
+		pci_clear_master(dev);
 
-    removeDmaMappings(vCard);
-  }
+		removeDmaMappings(vCard);
+	}
 #endif
 
-  pci_set_drvdata(dev, NULL);
+	pci_set_drvdata(dev, NULL);
 
-  free_irq(hCard->irq, vCard);
+	free_irq(hCard->irq, vCard);
 
-  DEBUGPRINT(3, "pciCanRemoveOne (2/8)\n");
+	DEBUGPRINT(3, "pciCanRemoveOne (2/8)\n");
 
-  vCard->cardPresent = 0;
+	vCard->cardPresent = 0;
 
-  DEBUGPRINT(3, "pciefd: Stopping all \"waitQueue's\"\n");
+	DEBUGPRINT(3, "pciefd: Stopping all \"waitQueue's\"\n");
 
-  for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
-    vCanCardRemoved(vCard->chanData[chNr]);
-  }
+	for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
+		vCanCardRemoved(vCard->chanData[chNr]);
+	}
 
-  DEBUGPRINT(3, "pciefd: Stopping all \"WaitNode's\"\n");
+	DEBUGPRINT(3, "pciefd: Stopping all \"WaitNode's\"\n");
 
-  {
-    struct list_head *currHead;
-    struct list_head *tmpHead;
-    WaitNode         *currNode;
-    unsigned long    irqFlags;
+	{
+		struct list_head* currHead;
+		struct list_head* tmpHead;
+		WaitNode* currNode;
+		unsigned long irqFlags;
 
-    write_lock_irqsave(&hCard->replyWaitListLock, irqFlags);
-    list_for_each_safe(currHead, tmpHead, &hCard->replyWaitList)
-    {
-      currNode = list_entry(currHead, WaitNode, list);
-      currNode->timedOut = 1;
-      complete(&currNode->waitCompletion);
-    }
-    write_unlock_irqrestore(&hCard->replyWaitListLock, irqFlags);
-  }
+		write_lock_irqsave(&hCard->replyWaitListLock, irqFlags);
+		list_for_each_safe(currHead, tmpHead, &hCard->replyWaitList)
+		{
+			currNode = list_entry(currHead, WaitNode, list);
+			currNode->timedOut = 1;
+			complete(&currNode->waitCompletion);
+		}
+		write_unlock_irqrestore(&hCard->replyWaitListLock, irqFlags);
+	}
 
-  for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
-    VCanChanData   *vChan = vCard->chanData[chNr];
-    PciCanChanData *hChd  = vChan->hwChanData;
+	for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
+		VCanChanData* vChan = vCard->chanData[chNr];
+		PciCanChanData* hChd = vChan->hwChanData;
 
-    DEBUGPRINT(3, "pciefd: Waiting for all closed on minor %d\n", vChan->minorNr);
-    while (atomic_read(&vChan->fileOpenCount) > 0) {
-      set_current_state(TASK_UNINTERRUPTIBLE);
-      schedule_timeout(msecs_to_jiffies(10));
-    }
+		DEBUGPRINT(3, "pciefd: Waiting for all closed on minor %d\n",
+		           vChan->minorNr);
+		while (atomic_read(&vChan->fileOpenCount) > 0) {
+			set_current_state(TASK_UNINTERRUPTIBLE);
+			schedule_timeout(msecs_to_jiffies(10));
+		}
 
-    // Stop pwm
-    pwmSetDutyCycle(hChd->canControllerBase, 0);
-  }
+		// Stop pwm
+		pwmSetDutyCycle(hChd->canControllerBase, 0);
+	}
 
-  DEBUGPRINT(3, "pciCanRemoveOne - wait done (3/8)\n");
+	DEBUGPRINT(3, "pciCanRemoveOne - wait done (3/8)\n");
 
-
-  DEBUGPRINT(3, "pciCanRemoveOne (4/8)\n");
+	DEBUGPRINT(3, "pciCanRemoveOne (4/8)\n");
 
 #if defined(TRY_RT_QUEUE)
-  for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
-    PciCanChanData *hChd = vCard->chanData[chNr]->hwChanData;
-    destroy_workqueue(hChd->txTaskQ);
-  }
+	for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
+		PciCanChanData* hChd = vCard->chanData[chNr]->hwChanData;
+		destroy_workqueue(hChd->txTaskQ);
+	}
 #endif
 
-  DEBUGPRINT(3, "pciCanRemoveOne (5/8)\n");
+	DEBUGPRINT(3, "pciCanRemoveOne (5/8)\n");
 
-  pci_iounmap(dev, hCard->pcieBar0Base);
+	pci_iounmap(dev, hCard->pcieBar0Base);
 
-  pci_disable_device(dev);
-  pci_release_regions(dev);
+	pci_disable_device(dev);
+	pci_release_regions(dev);
 
-  DEBUGPRINT(3, "pciCanRemoveOne (6/8)\n");
+	DEBUGPRINT(3, "pciCanRemoveOne (6/8)\n");
 
-  // Remove from canCards list
-  spin_lock(&driverData.canCardsLock);
-  lastCard = driverData.canCards;
-  if (lastCard == vCard) {
-    driverData.canCards = vCard->next;
-  } else {
-    while (lastCard && (lastCard->next != vCard)) {
-      lastCard = lastCard->next;
-    }
-    if (!lastCard) {
-      DEBUGPRINT(1, "Card not in list!\n");
-    } else {
-      lastCard->next = vCard->next;
-    }
-  }
-  spin_unlock(&driverData.canCardsLock);
+	// Remove from canCards list
+	spin_lock(&driverData.canCardsLock);
+	lastCard = driverData.canCards;
+	if (lastCard == vCard) {
+		driverData.canCards = vCard->next;
+	}
+	else {
+		while (lastCard && (lastCard->next != vCard)) {
+			lastCard = lastCard->next;
+		}
+		if (!lastCard) {
+			DEBUGPRINT(1, "Card not in list!\n");
+		}
+		else {
+			lastCard->next = vCard->next;
+		}
+	}
+	spin_unlock(&driverData.canCardsLock);
 
+	DEBUGPRINT(3, "pciCanRemoveOne (7/8)\n");
 
-  DEBUGPRINT(3, "pciCanRemoveOne (7/8)\n");
+	kfree(vCard->chanData);
+	kfree(vCard);
 
-  kfree(vCard->chanData);
-  kfree(vCard);
-
-  DEBUGPRINT(3, "pciCanRemoveOne (8/8)\n");
+	DEBUGPRINT(3, "pciCanRemoveOne (8/8)\n");
 }
-
 
 //======================================================================
 // Find and initialize all cards
 //======================================================================
-static int pciCanInitAllDevices (void)
+static int pciCanInitAllDevices(void)
 {
-  int found;
+	int found;
 
-  driverData.deviceName = DEVICE_NAME_STRING;
+	driverData.deviceName = DEVICE_NAME_STRING;
 
-  found = pci_register_driver(&pcican_tbl);
-  DEBUGPRINT(3, "pciCanInitAllDevices %d\n", found);
+	found = pci_register_driver(&pcican_tbl);
+	DEBUGPRINT(3, "pciCanInitAllDevices %d\n", found);
 
-  // We need to find at least one
-  return (found < 0) ? found : 0;
+	// We need to find at least one
+	return (found < 0) ? found : 0;
 } // pciCanInitAllDevices
-
 
 //======================================================================
 // Shut down and free resources before unloading driver
 //======================================================================
-static int pciCanCloseAllDevices (void)
+static int pciCanCloseAllDevices(void)
 {
-  DEBUGPRINT(3, "pciCanCloseAllDevices\n");
-  pci_unregister_driver(&pcican_tbl);
+	DEBUGPRINT(3, "pciCanCloseAllDevices\n");
+	pci_unregister_driver(&pcican_tbl);
 
-  return 0;
+	return 0;
 } // pciCanCloseAllDevices
 
-
-
-static int pciCanGetCustChannelName(const VCanChanData * const vChd,
-                                    unsigned char * const data,
+static int pciCanGetCustChannelName(const VCanChanData* const vChd,
+                                    unsigned char* const data,
                                     const unsigned int data_size,
-                                    unsigned int * const status)
+                                    unsigned int* const status)
 {
-  const unsigned int channel = vChd->channel;
-  unsigned int nbr_of_bytes_to_copy;
+	const unsigned int channel = vChd->channel;
+	unsigned int nbr_of_bytes_to_copy;
 
-  DEBUGPRINT(2, "[%s,%d]\n", __FUNCTION__, __LINE__);
+	DEBUGPRINT(2, "[%s,%d]\n", __FUNCTION__, __LINE__);
 
-  nbr_of_bytes_to_copy = PARAMETER_MAX_SIZE;
-  if (data_size < nbr_of_bytes_to_copy) {
-    nbr_of_bytes_to_copy = data_size;
-  }
+	nbr_of_bytes_to_copy = PARAMETER_MAX_SIZE;
+	if (data_size < nbr_of_bytes_to_copy) {
+		nbr_of_bytes_to_copy = data_size;
+	}
 
-  if (cust_channel_name[channel][0] != 0) {
-    memcpy(data, cust_channel_name[channel], nbr_of_bytes_to_copy);
-    data[nbr_of_bytes_to_copy - 1] = 0;
-    *status = VCAN_STAT_OK;
-  }
-  else {
-    *status = VCAN_STAT_FAIL;
-  }
+	if (cust_channel_name[channel][0] != 0) {
+		memcpy(data, cust_channel_name[channel], nbr_of_bytes_to_copy);
+		data[nbr_of_bytes_to_copy - 1] = 0;
+		*status = VCAN_STAT_OK;
+	}
+	else {
+		*status = VCAN_STAT_FAIL;
+	}
 
-  return *status;
+	return *status;
 }
 
-int init_module (void)
+int init_module(void)
 {
-  driverData.hwIf = &hwIf;
-  return vCanInit (&driverData, MAX_DRIVER_CHANNELS);
+	driverData.hwIf = &hwIf;
+	return vCanInit(&driverData, MAX_DRIVER_CHANNELS);
 }
 
-void cleanup_module (void)
+void cleanup_module(void)
 {
-  vCanCleanup (&driverData);
+	vCanCleanup(&driverData);
 }

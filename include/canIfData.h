@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -68,173 +70,168 @@
 #include <vcanevt.h>
 
 /* Used as interface datatype */
-typedef struct FilterData
-{
-  __u32 cmdNr;
-  __s32 cmdNrMask;
-  __u8 chanNr;
-  __s8 chanNrMask;
-  __u8 flags;
-  __s8 flagsMask;
-  __u8 isPass;
+typedef struct FilterData {
+	__u32 cmdNr;
+	__s32 cmdNrMask;
+	__u8 chanNr;
+	__s8 chanNrMask;
+	__u8 flags;
+	__s8 flagsMask;
+	__u8 isPass;
 } FilterData;
 
-typedef struct CanIfStat
-{
-    __u32   overruns;
-    __u16 statSize;
-    __u16 sendQL;
-    __u16 rcvQL;
+typedef struct CanIfStat {
+	__u32 overruns;
+	__u16 statSize;
+	__u16 sendQL;
+	__u16 rcvQL;
 } CanIfStat;
 
-
 typedef struct {
-    __s32 freq;
-    __u32 sjw;
-    __u32 tseg1;
-    __u32 tseg2;
-    __u32 samp3;
-  // After bit rate switch (CAN FD)
-    __s32 freq_brs;
-    __u32 sjw_brs;
-    __u32 tseg1_brs;
-    __u32 tseg2_brs;
+	__s32 freq;
+	__u32 sjw;
+	__u32 tseg1;
+	__u32 tseg2;
+	__u32 samp3;
+	// After bit rate switch (CAN FD)
+	__s32 freq_brs;
+	__u32 sjw_brs;
+	__u32 tseg1_brs;
+	__u32 tseg2_brs;
 } VCanBusParams;
 
 typedef struct {
-    __u8 eventMask;
-  //__u8 msgFlags;
-  //__u8 flagsMask;
-    __u64 stdId;
-    __u64 stdMask;
-    __u64 extId;
-    __u64 extMask;
-    __u8 typeBlock;
+	__u8 eventMask;
+	//__u8 msgFlags;
+	//__u8 flagsMask;
+	__u64 stdId;
+	__u64 stdMask;
+	__u64 extId;
+	__u64 extMask;
+	__u8 typeBlock;
 } VCanMsgFilter;
 
 typedef struct {
-    __u32  stdData;
-    __u32  stdRemote;
-    __u32  extData;
-    __u32  extRemote;
-    __u32  errFrame;
-    __u32  busLoad;
-    __u32  overruns;
-    __u32  bitCount;
-    __u32  timestamp;
-    __u32  bitTime100ns;
+	__u32 stdData;
+	__u32 stdRemote;
+	__u32 extData;
+	__u32 extRemote;
+	__u32 errFrame;
+	__u32 busLoad;
+	__u32 overruns;
+	__u32 bitCount;
+	__u32 timestamp;
+	__u32 bitTime100ns;
 } VCanBusStatistics;
 
 typedef struct {
-  __u32 buffer_number;
-  __u32 acc_code;
-  __u32 acc_mask;
-  __u32 flags;
-  __u32 type;
-  __u32 period;
-//  __u32 reserved[16];      // For future usage
+	__u32 buffer_number;
+	__u32 acc_code;
+	__u32 acc_mask;
+	__u32 flags;
+	__u32 type;
+	__u32 period;
+	//  __u32 reserved[16];      // For future usage
 } KCanObjbufAdminData;
 
-
 typedef struct {
-  __u32 buffer_number;
-  __u32 id;
-  __u32 dlc;
-  __u8 data[128]; // CAN FD/EF
-  __u32 flags;
+	__u32 buffer_number;
+	__u32 id;
+	__u32 dlc;
+	__u8 data[128]; // CAN FD/EF
+	__u32 flags;
 } KCanObjbufBufferData;
 
-//data structure for read functions
-#define READ_SPECIFIC_NO_SKIP          0
-#define READ_SPECIFIC_SKIP_MATCHING    1
-#define READ_SPECIFIC_SKIP_PRECEEDING  2
+// data structure for read functions
+#define READ_SPECIFIC_NO_SKIP 0
+#define READ_SPECIFIC_SKIP_MATCHING 1
+#define READ_SPECIFIC_SKIP_PRECEEDING 2
 typedef struct {
-  unsigned long timeout;
-  struct {
-    long          id;
-    unsigned char skip;
-  } specific;
-}VCanRead;
+	unsigned long timeout;
+	struct {
+		long id;
+		unsigned char skip;
+	} specific;
+} VCanRead;
 
 typedef struct {
-  unsigned char busStatus;
-  unsigned char txErrorCounter;
-  unsigned char rxErrorCounter;
-}VCanRequestChipStatus;
+	unsigned char busStatus;
+	unsigned char txErrorCounter;
+	unsigned char rxErrorCounter;
+} VCanRequestChipStatus;
 
 typedef struct {
-  uint32_t sw;
-  uint32_t hw;
-}VCanOverrun;
+	uint32_t sw;
+	uint32_t hw;
+} VCanOverrun;
 
 typedef struct {
-  int action;
-  int timeout;
-}VCanFlashLeds;
+	int action;
+	int timeout;
+} VCanFlashLeds;
 
 typedef struct {
-  uint8_t block;
-  uint8_t rx_bus;
-  uint8_t tx_bus;
-}VCanLoopbackSettings;
+	uint8_t block;
+	uint8_t rx_bus;
+	uint8_t tx_bus;
+} VCanLoopbackSettings;
 
 typedef struct {
-  int timeout;
-}VCanMemoConfigMode;
+	int timeout;
+} VCanMemoConfigMode;
 
 #define VCANOPEN_LOCKED -1
 #define VCANOPEN_OPENED -2
 typedef struct {
-  unsigned int  chanNr;
-  unsigned char override_exclusive;
-  int           retval;
-}VCanOpen;
+	unsigned int chanNr;
+	unsigned char override_exclusive;
+	int retval;
+} VCanOpen;
 
 #define VCANINITACCESS_FAIL -1
 typedef struct {
-  unsigned char require_init_access;
-  unsigned char wants_init_access;
-  int           retval;
-}VCanInitAccess;
+	unsigned char require_init_access;
+	unsigned char wants_init_access;
+	int retval;
+} VCanInitAccess;
 
 #define VCANSETBUSPARAMS_NO_INIT_ACCESS -1
 typedef struct {
-  VCanBusParams bp;
-  int           retval;
-}VCanSetBusParams;
+	VCanBusParams bp;
+	int retval;
+} VCanSetBusParams;
 
 #define VCANSETBUSOUTPUTCONTROL_NO_INIT_ACCESS -1
 typedef struct {
-  int  silent;
-  int  retval;
-}VCanSetBusOutputControl;
+	int silent;
+	int retval;
+} VCanSetBusOutputControl;
 
 #define VCANSETBUSON_FAIL -1
 typedef struct {
-  int  reset_time;
-  int  retval;
-}VCanSetBusOn;
+	int reset_time;
+	int retval;
+} VCanSetBusOn;
 
 // Other missing driver stuff
 //===========================================================================
 
 typedef struct {
-  unsigned char   second;
-  unsigned char   minute;
-  unsigned char   hour;
-  unsigned char   day;
-  unsigned char   month;
-  unsigned char   year;
+	unsigned char second;
+	unsigned char minute;
+	unsigned char hour;
+	unsigned char day;
+	unsigned char month;
+	unsigned char year;
 } KCANY_MEMO_INFO_RTC;
 
 typedef struct {
-  VCanRead *read;
-  VCAN_EVENT *msg;
+	VCanRead* read;
+	VCAN_EVENT* msg;
 } VCAN_IOCTL_READ_T;
 
 typedef struct {
-  VCAN_EVENT *msg;
+	VCAN_EVENT* msg;
 } KCAN_IOCTL_SCRIPT_GET_TEXT_T;
-
 
 #endif /* _CANIF_DATA_H_ */

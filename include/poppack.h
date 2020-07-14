@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -69,48 +71,48 @@
 ** -----------------------------------------------------------------------------
 */
 
-#if ! (defined(lint) || defined(_lint) || defined(RC_INVOKED))
-#  if defined(_MSC_VER)
-#    if ( _MSC_VER > 800 ) || defined(_PUSHPOP_SUPPORTED)
-#      pragma warning(disable:4103)
-#      if !(defined( MIDL_PASS )) || defined( __midl )
-#        pragma pack(pop)
-#      else
-#        pragma pack()
-#      endif
-#    else
-#      pragma warning(disable:4103)
-#      pragma pack()
-#    endif
-#  elif defined(__C166__)
-#    pragma pack()
-#  elif defined(__LCC__)
-#    pragma pack(pop)
-#  elif defined(__MWERKS__)
-#    pragma pack(pop)
-#  elif defined(__BORLANDC__)
-#    if (__BORLANDC__ >= 0x460)
-#      pragma nopackwarning
-#      pragma pack(pop)
-#    else
-#      pragma option -a.
-#    endif
-#  elif defined (__IAR_SYSTEMS_ICC)
-     /* IAR M16C 1.x */
-#    pragma alignment()
-#  elif defined (__IAR_SYSTEMS_ICC__)
-     /* IAR M32C 2.x */
-#    pragma pack(pop)
-#  elif defined (__GNUC__) && defined(__m32c__)
-     /* gcc 4.x m32c */
-#    pragma align reset
-#  elif defined(__GNUC__) && defined(__linux__)
-#    pragma pack()
-#  elif defined (__GNUC__) && defined(__arm__) && defined(__ARM_ARCH_4T__)
-     /* Do nothing */
-#  elif defined(__GCC__)
-#    pragma pack(pop)
-#  else
-#    error Unsupported compiler.
-#  endif
+#if !(defined(lint) || defined(_lint) || defined(RC_INVOKED))
+#	if defined(_MSC_VER)
+#		if (_MSC_VER > 800) || defined(_PUSHPOP_SUPPORTED)
+#			pragma warning(disable : 4103)
+#			if !(defined(MIDL_PASS)) || defined(__midl)
+#				pragma pack(pop)
+#			else
+#				pragma pack()
+#			endif
+#		else
+#			pragma warning(disable : 4103)
+#			pragma pack()
+#		endif
+#	elif defined(__C166__)
+#		pragma pack()
+#	elif defined(__LCC__)
+#		pragma pack(pop)
+#	elif defined(__MWERKS__)
+#		pragma pack(pop)
+#	elif defined(__BORLANDC__)
+#		if (__BORLANDC__ >= 0x460)
+#			pragma nopackwarning
+#			pragma pack(pop)
+#		else
+#			pragma option -a.
+#		endif
+#	elif defined(__IAR_SYSTEMS_ICC)
+/* IAR M16C 1.x */
+#		pragma alignment()
+#	elif defined(__IAR_SYSTEMS_ICC__)
+/* IAR M32C 2.x */
+#		pragma pack(pop)
+#	elif defined(__GNUC__) && defined(__m32c__)
+/* gcc 4.x m32c */
+#		pragma align reset
+#	elif defined(__GNUC__) && defined(__linux__)
+#		pragma pack()
+#	elif defined(__GNUC__) && defined(__arm__) && defined(__ARM_ARCH_4T__)
+/* Do nothing */
+#	elif defined(__GCC__)
+#		pragma pack(pop)
+#	else
+#		error Unsupported compiler.
+#	endif
 #endif /* ! (defined(lint) || defined(_lint) || defined(RC_INVOKED)) */

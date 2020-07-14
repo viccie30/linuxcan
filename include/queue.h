@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -77,47 +79,47 @@
 #define QUEUE_H
 #include <linux/version.h>
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 13, 0))
-#define wait_queue_entry_t wait_queue_t
+#	define wait_queue_entry_t wait_queue_t
 #endif /* KERNEL_VERSION < 4.13.0 */
 
-
-typedef enum {Normal_lock, Softirq_lock, Irq_lock} Lock_type;
+typedef enum { Normal_lock, Softirq_lock, Irq_lock } Lock_type;
 typedef struct {
-  int size;
-  int head;
-  int tail;
-  atomic_t length;      // For length queries without locking
-  unsigned long flags;  // Only used when holding the lock (Sparc incompatible)!
-  wait_queue_head_t space_event;
-  Lock_type lock_type;
-  spinlock_t lock;
-  int locked;           // For debugging
-  int line;             // For debugging
+	int size;
+	int head;
+	int tail;
+	atomic_t length; // For length queries without locking
+	unsigned long
+	        flags; // Only used when holding the lock (Sparc incompatible)!
+	wait_queue_head_t space_event;
+	Lock_type lock_type;
+	spinlock_t lock;
+	int locked; // For debugging
+	int line;   // For debugging
 } Queue;
 
-
-extern void queue_reinit(Queue *queue);
-extern void queue_init(Queue *queue, int size);
-extern void queue_irq_lock(Queue *queue);
-extern int  queue_length(Queue *queue);
-extern int  queue_full(Queue *queue);
-extern int  queue_empty(Queue *queue);
+extern void queue_reinit(Queue* queue);
+extern void queue_init(Queue* queue, int size);
+extern void queue_irq_lock(Queue* queue);
+extern int queue_length(Queue* queue);
+extern int queue_full(Queue* queue);
+extern int queue_empty(Queue* queue);
 
 // queue_back/front _must_ always be paired with queue_push/pop or _release.
 // The first two grab the Queue lock and the last three release it again.
 // Make _sure_ not to sleep inbetween and do as little work as possible
 // (the interrupts are disabled while holding the lock).
-extern int  queue_back(Queue *queue);
-extern void queue_push(Queue *queue);
-extern int  queue_front(Queue *queue);
-extern void queue_pop(Queue *queue);
-extern void queue_release(Queue *queue);
+extern int queue_back(Queue* queue);
+extern void queue_push(Queue* queue);
+extern int queue_front(Queue* queue);
+extern void queue_pop(Queue* queue);
+extern void queue_release(Queue* queue);
 
-extern void queue_add_wait_for_space(Queue *queue, wait_queue_entry_t *waiter);
-extern void queue_remove_wait_for_space(Queue *queue, wait_queue_entry_t *waiter);
-extern void queue_add_wait_for_data(Queue *queue, wait_queue_entry_t *waiter);
-extern void queue_wakeup_on_space(Queue *queue);
-extern void queue_wakeup_on_data(Queue *queue);
-extern wait_queue_head_t *queue_space_event(Queue *queue);
+extern void queue_add_wait_for_space(Queue* queue, wait_queue_entry_t* waiter);
+extern void queue_remove_wait_for_space(Queue* queue,
+                                        wait_queue_entry_t* waiter);
+extern void queue_add_wait_for_data(Queue* queue, wait_queue_entry_t* waiter);
+extern void queue_wakeup_on_space(Queue* queue);
+extern void queue_wakeup_on_data(Queue* queue);
+extern wait_queue_head_t* queue_space_event(Queue* queue);
 
 #endif

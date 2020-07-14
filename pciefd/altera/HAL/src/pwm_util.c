@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -68,7 +70,6 @@
 // is limited to 95%. The duty cycle limit is also enforced during
 // frequency and duty cycle changes.
 
-
 #include "HAL/inc/pwm_util.h"
 #include "inc/pciefd_regs.h"
 
@@ -76,7 +77,7 @@ static int sysClkFreq = 62.5e6;
 
 void pwmInit(int frequency)
 {
-  sysClkFreq = frequency;
+	sysClkFreq = frequency;
 }
 
 // +----------------------------------------------------------------------------
@@ -85,19 +86,19 @@ void pwmInit(int frequency)
 // +----------------------------------------------------------------------------
 static int pwmTop(int frequency)
 {
-  int top;
+	int top;
 
-  top = sysClkFreq / (2*frequency) - 1;
+	top = sysClkFreq / (2 * frequency) - 1;
 
-  if (top < 1) {
-    return 1;
-  }
+	if (top < 1) {
+		return 1;
+	}
 
-  if (top > 255) {
-    return 255;
-  }
+	if (top > 255) {
+		return 255;
+	}
 
-  return top;
+	return top;
 }
 
 // +----------------------------------------------------------------------------
@@ -106,7 +107,7 @@ static int pwmTop(int frequency)
 // +----------------------------------------------------------------------------
 static int pwmFrequency(int top)
 {
-  return sysClkFreq/(2*(top+1));
+	return sysClkFreq / (2 * (top + 1));
 }
 
 // +----------------------------------------------------------------------------
@@ -115,15 +116,16 @@ static int pwmFrequency(int top)
 // +----------------------------------------------------------------------------
 static int pwmTrigger(int top, int duty_cycle)
 {
-  int trigger;
+	int trigger;
 
-  trigger = (100*top - duty_cycle*(top+1) + 50)/100; // +50 for rounding instead of truncating
+	trigger = (100 * top - duty_cycle * (top + 1) + 50) /
+	          100; // +50 for rounding instead of truncating
 
-  // Can't really reach 100% because of at least one clock cycle dead band
-  if(trigger < 0)
-    trigger = 0;
+	// Can't really reach 100% because of at least one clock cycle dead band
+	if (trigger < 0)
+		trigger = 0;
 
-  return trigger;
+	return trigger;
 }
 
 // +----------------------------------------------------------------------------
@@ -132,84 +134,86 @@ static int pwmTrigger(int top, int duty_cycle)
 // +----------------------------------------------------------------------------
 static int pwmDutyCycle(int top, int trigger)
 {
-  if ( trigger > top ) return 0;
+	if (trigger > top)
+		return 0;
 
-  return (5 + 1000*(top-trigger)/(top+1))/10; //5+ for rounding
+	return (5 + 1000 * (top - trigger) / (top + 1)) / 10; // 5+ for rounding
 }
 
 // +----------------------------------------------------------------------------
 // | Get current duty cycle
 // |
 // +----------------------------------------------------------------------------
-int pwmGetDutyCycle(u32 *address)
+int pwmGetDutyCycle(u32* address)
 {
-  u32 pwm_ctrl = IORD_PCIEFD_PWM_CTRL(address);
-  int top = PCIEFD_PWM_CTRL_TOP_GET(pwm_ctrl);
-  int trigger = PCIEFD_PWM_CTRL_TRIGGER_GET(pwm_ctrl);
+	u32 pwm_ctrl = IORD_PCIEFD_PWM_CTRL(address);
+	int top = PCIEFD_PWM_CTRL_TOP_GET(pwm_ctrl);
+	int trigger = PCIEFD_PWM_CTRL_TRIGGER_GET(pwm_ctrl);
 
-  return pwmDutyCycle(top,trigger);
+	return pwmDutyCycle(top, trigger);
 }
 
-int pwmSetDutyCycle(u32 *address, int duty_cycle)
+int pwmSetDutyCycle(u32* address, int duty_cycle)
 {
-  u32 pwm_ctrl = IORD_PCIEFD_PWM_CTRL(address);
-  int top = PCIEFD_PWM_CTRL_TOP_GET(pwm_ctrl);
-  int trigger;
+	u32 pwm_ctrl = IORD_PCIEFD_PWM_CTRL(address);
+	int top = PCIEFD_PWM_CTRL_TOP_GET(pwm_ctrl);
+	int trigger;
 
-  if ( duty_cycle < 0 ) {
-    duty_cycle = 0;
-  } else if ( duty_cycle > 100 ) {
-    duty_cycle = 100;
-  }
+	if (duty_cycle < 0) {
+		duty_cycle = 0;
+	}
+	else if (duty_cycle > 100) {
+		duty_cycle = 100;
+	}
 
-  trigger = pwmTrigger(top, duty_cycle);
+	trigger = pwmTrigger(top, duty_cycle);
 
-  pwm_ctrl = PCIEFD_PWM_CTRL_TRIGGER(trigger);
-  pwm_ctrl |= PCIEFD_PWM_CTRL_TOP(top);
-  IOWR_PCIEFD_PWM_CTRL(address, pwm_ctrl);
+	pwm_ctrl = PCIEFD_PWM_CTRL_TRIGGER(trigger);
+	pwm_ctrl |= PCIEFD_PWM_CTRL_TOP(top);
+	IOWR_PCIEFD_PWM_CTRL(address, pwm_ctrl);
 
-  return pwmDutyCycle(top, duty_cycle);
+	return pwmDutyCycle(top, duty_cycle);
 }
 
 // +----------------------------------------------------------------------------
 // | Get current frequency
 // |
 // +----------------------------------------------------------------------------
-int pwmGetFrequency(u32 *address)
+int pwmGetFrequency(u32* address)
 {
-  u32 pwm_ctrl = IORD_PCIEFD_PWM_CTRL(address);
-  int top = PCIEFD_PWM_CTRL_TOP_GET(pwm_ctrl);
+	u32 pwm_ctrl = IORD_PCIEFD_PWM_CTRL(address);
+	int top = PCIEFD_PWM_CTRL_TOP_GET(pwm_ctrl);
 
-  return pwmFrequency(top);
+	return pwmFrequency(top);
 }
 
-int pwmSetFrequency(u32 *address, int frequency)
+int pwmSetFrequency(u32* address, int frequency)
 {
-  u32 pwm_ctrl;
-  int top;
-  int duty_cycle = pwmGetDutyCycle(address); // Save current duty cycle
+	u32 pwm_ctrl;
+	int top;
+	int duty_cycle = pwmGetDutyCycle(address); // Save current duty cycle
 
-  if (frequency < F_PWM_MIN) {
-    frequency = F_PWM_MIN;
-  } else if (frequency > F_PWM_MAX) {
-    frequency = F_PWM_MAX;
-  }
+	if (frequency < F_PWM_MIN) {
+		frequency = F_PWM_MIN;
+	}
+	else if (frequency > F_PWM_MAX) {
+		frequency = F_PWM_MAX;
+	}
 
-  top = pwmTop(frequency);
+	top = pwmTop(frequency);
 
-  // Set duty cycle to zero during frequency shift
-  pwmSetDutyCycle(address,0);
+	// Set duty cycle to zero during frequency shift
+	pwmSetDutyCycle(address, 0);
 
-  pwm_ctrl = PCIEFD_PWM_CTRL_TRIGGER(top);
-  pwm_ctrl |= PCIEFD_PWM_CTRL_TOP(top);
-  IOWR_PCIEFD_PWM_CTRL(address, pwm_ctrl);
+	pwm_ctrl = PCIEFD_PWM_CTRL_TRIGGER(top);
+	pwm_ctrl |= PCIEFD_PWM_CTRL_TOP(top);
+	IOWR_PCIEFD_PWM_CTRL(address, pwm_ctrl);
 
-  // NOTE: Possibly set top and new trigger in the order giving least overshoot.
-  // If top increases, change top first
-  // If top decreases, change trigger first
+	// NOTE: Possibly set top and new trigger in the order giving least
+	// overshoot. If top increases, change top first If top decreases, change
+	// trigger first
 
-  pwmSetDutyCycle(address, duty_cycle); // Restore duty cycle
+	pwmSetDutyCycle(address, duty_cycle); // Restore duty cycle
 
-  return pwmFrequency(top);
+	return pwmFrequency(top);
 }
-

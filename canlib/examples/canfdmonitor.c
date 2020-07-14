@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -72,174 +74,174 @@
 #include <errno.h>
 #include <unistd.h>
 
-#define ALARM_INTERVAL_IN_S   (1)
-#define READ_WAIT_INFINITE    (unsigned long)(-1)
+#define ALARM_INTERVAL_IN_S (1)
+#define READ_WAIT_INFINITE (unsigned long) (-1)
 
 static unsigned int msgCounter = 0;
 
 static void check(char* id, canStatus stat)
 {
-  if (stat != canOK) {
-    char buf[50];
-    buf[0] = '\0';
-    canGetErrorText(stat, buf, sizeof(buf));
-    printf("%s: failed, stat=%d (%s)\n", id, (int)stat, buf);
-  }
+	if (stat != canOK) {
+		char buf[50];
+		buf[0] = '\0';
+		canGetErrorText(stat, buf, sizeof(buf));
+		printf("%s: failed, stat=%d (%s)\n", id, (int) stat, buf);
+	}
 }
 
-static void printUsageAndExit(char *prgName)
+static void printUsageAndExit(char* prgName)
 {
-  printf("Usage: '%s <channel>'\n", prgName);
-  exit(1);
+	printf("Usage: '%s <channel>'\n", prgName);
+	exit(1);
 }
 
 static void sighand(int sig)
 {
-  static unsigned int last;
+	static unsigned int last;
 
-  switch (sig) {
-  case SIGINT:
-    break;
-  case SIGALRM:
-    if (msgCounter != last) {
-      printf("rx : %u total: %u\n", msgCounter - last, msgCounter);
-    }
-    last = msgCounter;
-    alarm(ALARM_INTERVAL_IN_S);
-    break;
-  }
+	switch (sig) {
+	case SIGINT:
+		break;
+	case SIGALRM:
+		if (msgCounter != last) {
+			printf("rx : %u total: %u\n", msgCounter - last, msgCounter);
+		}
+		last = msgCounter;
+		alarm(ALARM_INTERVAL_IN_S);
+		break;
+	}
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-  canHandle hnd;
-  canStatus stat;
-  int channel;
+	canHandle hnd;
+	canStatus stat;
+	int channel;
 
-  if (argc != 2) {
-    printUsageAndExit(argv[0]);
-  }
+	if (argc != 2) {
+		printUsageAndExit(argv[0]);
+	}
 
-  {
-    char *endPtr = NULL;
-    errno = 0;
-    channel = strtol(argv[1], &endPtr, 10);
-    if ( (errno != 0) || ((channel == 0) && (endPtr == argv[1])) ) {
-      printUsageAndExit(argv[0]);
-    }
-  }
+	{
+		char* endPtr = NULL;
+		errno = 0;
+		channel = strtol(argv[1], &endPtr, 10);
+		if ((errno != 0) || ((channel == 0) && (endPtr == argv[1]))) {
+			printUsageAndExit(argv[0]);
+		}
+	}
 
-  printf("Reading messages on channel %d\n", channel);
+	printf("Reading messages on channel %d\n", channel);
 
-  /* Use sighand as our signal handler */
-  signal(SIGALRM, sighand);
-  signal(SIGINT, sighand);
+	/* Use sighand as our signal handler */
+	signal(SIGALRM, sighand);
+	signal(SIGINT, sighand);
 
-  /* Allow signals to interrupt syscalls */
-  siginterrupt(SIGINT, 1);
+	/* Allow signals to interrupt syscalls */
+	siginterrupt(SIGINT, 1);
 
-  canInitializeLibrary();
+	canInitializeLibrary();
 
-  /* Open channel, set parameters and go on bus */
-  hnd = canOpenChannel(channel, canOPEN_CAN_FD);
-  if (hnd < 0) {
-    printf("canOpenChannel %d", channel);
-    check("", hnd);
-    return -1;
-  }
+	/* Open channel, set parameters and go on bus */
+	hnd = canOpenChannel(channel, canOPEN_CAN_FD);
+	if (hnd < 0) {
+		printf("canOpenChannel %d", channel);
+		check("", hnd);
+		return -1;
+	}
 
-  stat = canSetBusParams(hnd, canFD_BITRATE_1M_80P, 0, 0, 0, 0, 0);
-  check("canSetBusParams", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
-  stat = canSetBusParamsFd(hnd, canFD_BITRATE_2M_80P, 0, 0, 0);
-  check("canSetBusParamsFd", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
-  stat = canBusOn(hnd);
-  check("canBusOn", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
+	stat = canSetBusParams(hnd, canFD_BITRATE_1M_80P, 0, 0, 0, 0, 0);
+	check("canSetBusParams", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
+	stat = canSetBusParamsFd(hnd, canFD_BITRATE_2M_80P, 0, 0, 0);
+	check("canSetBusParamsFd", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
+	stat = canBusOn(hnd);
+	check("canBusOn", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
 
-  alarm(ALARM_INTERVAL_IN_S);
+	alarm(ALARM_INTERVAL_IN_S);
 
-  do {
-    long id;
-    unsigned char msg[64];
-    unsigned int dlc;
-    unsigned int flag;
-    unsigned long time;
+	do {
+		long id;
+		unsigned char msg[64];
+		unsigned int dlc;
+		unsigned int flag;
+		unsigned long time;
 
-    stat = canReadWait(hnd, &id, &msg, &dlc, &flag, &time, READ_WAIT_INFINITE);
+		stat = canReadWait(hnd, &id, &msg, &dlc, &flag, &time,
+		                   READ_WAIT_INFINITE);
 
-    if (stat == canOK) {
-      char *can_std;
-      unsigned int i;
+		if (stat == canOK) {
+			char* can_std;
+			unsigned int i;
 
-      msgCounter++;
-      if (flag & canMSG_ERROR_FRAME) {
-        printf("(%u) ERROR FRAME flags:0x%x time:%lu\n", msgCounter, flag, time);
-        continue;
-      }
+			msgCounter++;
+			if (flag & canMSG_ERROR_FRAME) {
+				printf("(%u) ERROR FRAME flags:0x%x time:%lu\n", msgCounter,
+				       flag, time);
+				continue;
+			}
 
-      if (flag & canFDMSG_FDF) {
-        if (flag & canFDMSG_BRS) {
-          can_std = "FD+";
-          }
-        else {
-          can_std = "FD ";
-        }
-      }
-      else {
-        can_std = "STD";
-      }
+			if (flag & canFDMSG_FDF) {
+				if (flag & canFDMSG_BRS) {
+					can_std = "FD+";
+				}
+				else {
+					can_std = "FD ";
+				}
+			}
+			else {
+				can_std = "STD";
+			}
 
-      printf("CH:%2d %s:%s:%2u:%08lx", channel,
-             can_std,
-             (flag & canMSG_EXT) ? "X" : " ",
-             dlc,id);
+			printf("CH:%2d %s:%s:%2u:%08lx", channel, can_std,
+			       (flag & canMSG_EXT) ? "X" : " ", dlc, id);
 
-      if (flag & canFDMSG_ESI) {
-        printf("ESI ");
-      }
+			if (flag & canFDMSG_ESI) {
+				printf("ESI ");
+			}
 
-      printf(" flags:0x%x time:%lu", flag, time);
+			printf(" flags:0x%x time:%lu", flag, time);
 
-      for (i = 0; i < dlc; i++) {
-        unsigned char byte = msg[i];
+			for (i = 0; i < dlc; i++) {
+				unsigned char byte = msg[i];
 
-        if ((i % 16) == 0) {
-          printf("\n    ");
-        }
-        printf(" %02x ", byte);
-      }
-      printf("\n");
-    }
-    else {
-      if (errno == 0) {
-        check("\ncanReadWait", stat);
-      }
-      else {
-        perror("\ncanReadWait error");
-      }
-    }
+				if ((i % 16) == 0) {
+					printf("\n    ");
+				}
+				printf(" %02x ", byte);
+			}
+			printf("\n");
+		}
+		else {
+			if (errno == 0) {
+				check("\ncanReadWait", stat);
+			}
+			else {
+				perror("\ncanReadWait error");
+			}
+		}
 
-  } while (stat == canOK);
+	} while (stat == canOK);
 
-  sighand(SIGALRM);
+	sighand(SIGALRM);
 
 ErrorExit:
 
-  alarm(0);
-  stat = canBusOff(hnd);
-  check("canBusOff", stat);
-  stat = canClose(hnd);
-  check("canClose", stat);
-  stat = canUnloadLibrary();
-  check("canUnloadLibrary", stat);
+	alarm(0);
+	stat = canBusOff(hnd);
+	check("canBusOff", stat);
+	stat = canClose(hnd);
+	check("canClose", stat);
+	stat = canUnloadLibrary();
+	check("canUnloadLibrary", stat);
 
-  return 0;
+	return 0;
 }

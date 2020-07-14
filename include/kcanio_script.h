@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -72,47 +74,48 @@
 #define KCANIO_SCRIPT_H
 
 //---------------------------------------------------------------------------
-// NOTE that these defines HAVE to exactly match the defins in both hydra_host_cmds.h
-// and filo_cmds.h, if you add a define add a compiler assert in /drv/
+// NOTE that these defines HAVE to exactly match the defins in both
+// hydra_host_cmds.h and filo_cmds.h, if you add a define add a compiler assert
+// in /drv/
 //---------------------------------------------------------------------------
 
 // -------------------
 // envvar
-#define KCANIO_SCRIPT_ENVVAR_SUBCMD_SET_START         1
-#define KCANIO_SCRIPT_ENVVAR_SUBCMD_GET_START         2
+#define KCANIO_SCRIPT_ENVVAR_SUBCMD_SET_START 1
+#define KCANIO_SCRIPT_ENVVAR_SUBCMD_GET_START 2
 
-#define KCANIO_SCRIPT_ENVVAR_RESP_OK                  0
-#define KCANIO_SCRIPT_ENVVAR_RESP_UNKNOWN_VAR         1
-#define KCANIO_SCRIPT_ENVVAR_RESP_WRONG_VAR_LEN       2
-#define KCANIO_SCRIPT_ENVVAR_RESP_OUT_OF_MEMORY       3
+#define KCANIO_SCRIPT_ENVVAR_RESP_OK 0
+#define KCANIO_SCRIPT_ENVVAR_RESP_UNKNOWN_VAR 1
+#define KCANIO_SCRIPT_ENVVAR_RESP_WRONG_VAR_LEN 2
+#define KCANIO_SCRIPT_ENVVAR_RESP_OUT_OF_MEMORY 3
 
-#define KCANIO_SCRIPT_CTRL_ERR_SUCCESS                0
-#define KCANIO_SCRIPT_CTRL_ERR_NO_MORE_PROCESSES      1
-#define KCANIO_SCRIPT_CTRL_ERR_FILE_NOT_FOUND         2
-#define KCANIO_SCRIPT_CTRL_ERR_OPEN_FILE_ERR          3
-#define KCANIO_SCRIPT_CTRL_ERR_OPEN_FILE_NO_MEM       4
-#define KCANIO_SCRIPT_CTRL_ERR_FILE_READ_ERR          5
-#define KCANIO_SCRIPT_CTRL_ERR_LOAD_FILE_ERR          6
-#define KCANIO_SCRIPT_CTRL_ERR_OUT_OF_CODE_MEM        7
-#define KCANIO_SCRIPT_CTRL_ERR_FILE_REWIND_FAIL       8
-#define KCANIO_SCRIPT_CTRL_ERR_LOAD_FAIL              9
-#define KCANIO_SCRIPT_CTRL_ERR_SETUP_FAIL            10
-#define KCANIO_SCRIPT_CTRL_ERR_SETUP_FUN_TABLE_FAIL  11
-#define KCANIO_SCRIPT_CTRL_ERR_SETUP_PARAMS_FAIL     12
-#define KCANIO_SCRIPT_CTRL_ERR_PROCESSES_NOT_FOUND   13
-#define KCANIO_SCRIPT_CTRL_ERR_START_FAILED          14
-#define KCANIO_SCRIPT_CTRL_ERR_STOP_FAILED           15
-#define KCANIO_SCRIPT_CTRL_ERR_SPI_BUSY              16
-#define KCANIO_SCRIPT_CTRL_ERR_PROCESS_NOT_STOPPED   17
-#define KCANIO_SCRIPT_CTRL_ERR_PROCESS_NOT_RUNNING   18
-#define KCANIO_SCRIPT_CTRL_ERR_ENVVAR_NOT_FOUND      19
+#define KCANIO_SCRIPT_CTRL_ERR_SUCCESS 0
+#define KCANIO_SCRIPT_CTRL_ERR_NO_MORE_PROCESSES 1
+#define KCANIO_SCRIPT_CTRL_ERR_FILE_NOT_FOUND 2
+#define KCANIO_SCRIPT_CTRL_ERR_OPEN_FILE_ERR 3
+#define KCANIO_SCRIPT_CTRL_ERR_OPEN_FILE_NO_MEM 4
+#define KCANIO_SCRIPT_CTRL_ERR_FILE_READ_ERR 5
+#define KCANIO_SCRIPT_CTRL_ERR_LOAD_FILE_ERR 6
+#define KCANIO_SCRIPT_CTRL_ERR_OUT_OF_CODE_MEM 7
+#define KCANIO_SCRIPT_CTRL_ERR_FILE_REWIND_FAIL 8
+#define KCANIO_SCRIPT_CTRL_ERR_LOAD_FAIL 9
+#define KCANIO_SCRIPT_CTRL_ERR_SETUP_FAIL 10
+#define KCANIO_SCRIPT_CTRL_ERR_SETUP_FUN_TABLE_FAIL 11
+#define KCANIO_SCRIPT_CTRL_ERR_SETUP_PARAMS_FAIL 12
+#define KCANIO_SCRIPT_CTRL_ERR_PROCESSES_NOT_FOUND 13
+#define KCANIO_SCRIPT_CTRL_ERR_START_FAILED 14
+#define KCANIO_SCRIPT_CTRL_ERR_STOP_FAILED 15
+#define KCANIO_SCRIPT_CTRL_ERR_SPI_BUSY 16
+#define KCANIO_SCRIPT_CTRL_ERR_PROCESS_NOT_STOPPED 17
+#define KCANIO_SCRIPT_CTRL_ERR_PROCESS_NOT_RUNNING 18
+#define KCANIO_SCRIPT_CTRL_ERR_ENVVAR_NOT_FOUND 19
 
-#define KCANIO_SCRIPT_CTRL_ERR_UNKNOWN_COMMAND       20
-#define KCANIO_SCRIPT_CTRL_ERR_PROCESS_NOT_LOADED    21
-#define KCANIO_SCRIPT_CTRL_ERR_COMPILER_VERSION      22
-#define KCANIO_SCRIPT_CTRL_ERR_INVALID_PARAMETER     23
+#define KCANIO_SCRIPT_CTRL_ERR_UNKNOWN_COMMAND 20
+#define KCANIO_SCRIPT_CTRL_ERR_PROCESS_NOT_LOADED 21
+#define KCANIO_SCRIPT_CTRL_ERR_COMPILER_VERSION 22
+#define KCANIO_SCRIPT_CTRL_ERR_INVALID_PARAMETER 23
 
-#define KCANIO_SCRIPT_CTRL_ERR_NOT_IMPLEMENTED       43
+#define KCANIO_SCRIPT_CTRL_ERR_NOT_IMPLEMENTED 43
 
 /*****************************************************************************/
 

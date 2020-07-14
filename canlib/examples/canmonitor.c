@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -74,159 +76,172 @@
 #include <time.h>
 #include "vcanevt.h"
 
-#define READ_WAIT_INFINITE    (unsigned long)(-1)
+#define READ_WAIT_INFINITE (unsigned long) (-1)
 
 static unsigned int msgCounter = 0;
 
 static void check(char* id, canStatus stat)
 {
-  if (stat != canOK) {
-    char buf[50];
-    buf[0] = '\0';
-    canGetErrorText(stat, buf, sizeof(buf));
-    printf("%s: failed, stat=%d (%s)\n", id, (int)stat, buf);
-  }
+	if (stat != canOK) {
+		char buf[50];
+		buf[0] = '\0';
+		canGetErrorText(stat, buf, sizeof(buf));
+		printf("%s: failed, stat=%d (%s)\n", id, (int) stat, buf);
+	}
 }
 
-static void printUsageAndExit(char *prgName)
+static void printUsageAndExit(char* prgName)
 {
-  printf("Usage: '%s <channel>'\n", prgName);
-  exit(1);
+	printf("Usage: '%s <channel>'\n", prgName);
+	exit(1);
 }
 
 static void sighand(int sig)
 {
-  (void)sig;
+	(void) sig;
 }
 
-static char* busStatToStr(const unsigned long flag) {
-    char* tempStr = NULL;
-    #define MACRO2STR(x) case x: tempStr = #x; break
-    switch (flag) {
-        MACRO2STR( CHIPSTAT_BUSOFF        );
-        MACRO2STR( CHIPSTAT_ERROR_PASSIVE );
-        MACRO2STR( CHIPSTAT_ERROR_WARNING );
-        MACRO2STR( CHIPSTAT_ERROR_ACTIVE  );
-        default: tempStr = ""; break;
-    }
-    #undef MACRO2STR
-    return tempStr;
-}
-
-void notifyCallback(canNotifyData *data) {
-  switch (data->eventType) {
-  case canEVENT_STATUS:
-    printf("CAN Status Event: %s\n", busStatToStr(data->info.status.busStatus));
-    break;
-  case canEVENT_ERROR:
-    printf("CAN Error Event\n");
-    break;
-  case canEVENT_TX:
-    printf("CAN Tx Event\n");
-    break;
-  case canEVENT_RX:
-    printf("CAN Rx Event\n");
-    break;
-  }
-  return;
-}
-
-int main(int argc, char *argv[])
+static char* busStatToStr(const unsigned long flag)
 {
-  canHandle hnd;
-  canStatus stat;
-  int channel;
+	char* tempStr = NULL;
+#define MACRO2STR(x)                                                           \
+	case x:                                                                    \
+		tempStr = #x;                                                          \
+		break
+	switch (flag) {
+		MACRO2STR(CHIPSTAT_BUSOFF);
+		MACRO2STR(CHIPSTAT_ERROR_PASSIVE);
+		MACRO2STR(CHIPSTAT_ERROR_WARNING);
+		MACRO2STR(CHIPSTAT_ERROR_ACTIVE);
+	default:
+		tempStr = "";
+		break;
+	}
+#undef MACRO2STR
+	return tempStr;
+}
 
-  if (argc != 2) {
-    printUsageAndExit(argv[0]);
-  }
+void notifyCallback(canNotifyData* data)
+{
+	switch (data->eventType) {
+	case canEVENT_STATUS:
+		printf("CAN Status Event: %s\n",
+		       busStatToStr(data->info.status.busStatus));
+		break;
+	case canEVENT_ERROR:
+		printf("CAN Error Event\n");
+		break;
+	case canEVENT_TX:
+		printf("CAN Tx Event\n");
+		break;
+	case canEVENT_RX:
+		printf("CAN Rx Event\n");
+		break;
+	}
+	return;
+}
 
-  {
-    char *endPtr = NULL;
-    errno = 0;
-    channel = strtol(argv[1], &endPtr, 10);
-    if ( (errno != 0) || ((channel == 0) && (endPtr == argv[1])) ) {
-      printUsageAndExit(argv[0]);
-    }
-  }
+int main(int argc, char* argv[])
+{
+	canHandle hnd;
+	canStatus stat;
+	int channel;
 
-  printf("Reading messages on channel %d\n", channel);
+	if (argc != 2) {
+		printUsageAndExit(argv[0]);
+	}
 
-  /* Allow signals to interrupt syscalls */
-  signal(SIGINT, sighand);
-  siginterrupt(SIGINT, 1);
+	{
+		char* endPtr = NULL;
+		errno = 0;
+		channel = strtol(argv[1], &endPtr, 10);
+		if ((errno != 0) || ((channel == 0) && (endPtr == argv[1]))) {
+			printUsageAndExit(argv[0]);
+		}
+	}
 
-  canInitializeLibrary();
+	printf("Reading messages on channel %d\n", channel);
 
-  /* Open channel, set parameters and go on bus */
-  hnd = canOpenChannel(channel, canOPEN_EXCLUSIVE | canOPEN_REQUIRE_EXTENDED | canOPEN_ACCEPT_VIRTUAL);
-  if (hnd < 0) {
-    printf("canOpenChannel %d", channel);
-    check("", hnd);
-    return -1;
-  }
+	/* Allow signals to interrupt syscalls */
+	signal(SIGINT, sighand);
+	siginterrupt(SIGINT, 1);
 
-  stat = canSetNotify(hnd, notifyCallback, canNOTIFY_RX | canNOTIFY_TX | canNOTIFY_ERROR | canNOTIFY_STATUS | canNOTIFY_ENVVAR, (char*)0);
-  check("canSetNotify", stat);
+	canInitializeLibrary();
 
-  stat = canSetBusParams(hnd, canBITRATE_1M, 0, 0, 0, 0, 0);
-  check("canSetBusParams", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
-  stat = canBusOn(hnd);
-  check("canBusOn", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
+	/* Open channel, set parameters and go on bus */
+	hnd = canOpenChannel(channel, canOPEN_EXCLUSIVE | canOPEN_REQUIRE_EXTENDED |
+	                                      canOPEN_ACCEPT_VIRTUAL);
+	if (hnd < 0) {
+		printf("canOpenChannel %d", channel);
+		check("", hnd);
+		return -1;
+	}
 
-  do {
-    long id;
-    unsigned char msg[8];
-    unsigned int dlc;
-    unsigned int flag;
-    unsigned long time;
+	stat = canSetNotify(hnd, notifyCallback,
+	                    canNOTIFY_RX | canNOTIFY_TX | canNOTIFY_ERROR |
+	                            canNOTIFY_STATUS | canNOTIFY_ENVVAR,
+	                    (char*) 0);
+	check("canSetNotify", stat);
 
-    stat = canReadWait(hnd, &id, &msg, &dlc, &flag, &time, READ_WAIT_INFINITE);
+	stat = canSetBusParams(hnd, canBITRATE_1M, 0, 0, 0, 0, 0);
+	check("canSetBusParams", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
+	stat = canBusOn(hnd);
+	check("canBusOn", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
 
-    if (stat == canOK) {
-      msgCounter++;
-      if (flag & canMSG_ERROR_FRAME) {
-        printf("(%u) ERROR FRAME", msgCounter);
-      }
-      else {
-        unsigned j;
+	do {
+		long id;
+		unsigned char msg[8];
+		unsigned int dlc;
+		unsigned int flag;
+		unsigned long time;
 
-        printf("(%u) id:%ld dlc:%u data: ", msgCounter, id, dlc);
-        if (dlc > 8) {
-          dlc = 8;
-        }
-        for (j = 0; j < dlc; j++) {
-          printf("%2.2x ", msg[j]);
-        }
-      }
-      printf(" flags:0x%x time:%lu\n", flag, time);
-    }
-    else {
-      if (errno == 0) {
-        check("\ncanReadWait", stat);
-      }
-      else {
-        perror("\ncanReadWait error");
-      }
-    }
+		stat = canReadWait(hnd, &id, &msg, &dlc, &flag, &time,
+		                   READ_WAIT_INFINITE);
 
-  } while (stat == canOK);
+		if (stat == canOK) {
+			msgCounter++;
+			if (flag & canMSG_ERROR_FRAME) {
+				printf("(%u) ERROR FRAME", msgCounter);
+			}
+			else {
+				unsigned j;
+
+				printf("(%u) id:%ld dlc:%u data: ", msgCounter, id, dlc);
+				if (dlc > 8) {
+					dlc = 8;
+				}
+				for (j = 0; j < dlc; j++) {
+					printf("%2.2x ", msg[j]);
+				}
+			}
+			printf(" flags:0x%x time:%lu\n", flag, time);
+		}
+		else {
+			if (errno == 0) {
+				check("\ncanReadWait", stat);
+			}
+			else {
+				perror("\ncanReadWait error");
+			}
+		}
+
+	} while (stat == canOK);
 
 ErrorExit:
 
-  stat = canBusOff(hnd);
-  check("canBusOff", stat);
-  usleep(50*1000); // Sleep just to get the last notification.
-  stat = canClose(hnd);
-  check("canClose", stat);
-  stat = canUnloadLibrary();
-  check("canUnloadLibrary", stat);
+	stat = canBusOff(hnd);
+	check("canBusOff", stat);
+	usleep(50 * 1000); // Sleep just to get the last notification.
+	stat = canClose(hnd);
+	check("canClose", stat);
+	stat = canUnloadLibrary();
+	check("canUnloadLibrary", stat);
 
-  return 0;
+	return 0;
 }

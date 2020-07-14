@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -76,32 +78,39 @@
 // modules at load time with a 'pc_debug=#' option to insmod.
 //
 #ifdef MHYDRA_DEBUG
-#   define DEBUGPRINT(n, arg)     if (pc_debug >= (n)) { DEBUGOUT(n, arg); }
+#	define DEBUGPRINT(n, arg)                                                 \
+		if (pc_debug >= (n)) {                                                 \
+			DEBUGOUT(n, arg);                                                  \
+		}
 #else
-#   define DEBUGPRINT(n, arg)     if ((n) == 1) { DEBUGOUT(n, arg); }
+#	define DEBUGPRINT(n, arg)                                                 \
+		if ((n) == 1) {                                                        \
+			DEBUGOUT(n, arg);                                                  \
+		}
 #endif /* MHYDRA_DEBUG */
 
 //----------------------------------------------------------------------------
-int mhydra_special_ioctl_handler(VCanOpenFileNode *fileNodePtr, unsigned int ioctl_cmd, unsigned long arg)
+int mhydra_special_ioctl_handler(VCanOpenFileNode* fileNodePtr,
+                                 unsigned int ioctl_cmd, unsigned long arg)
 {
-  int            status = VCAN_STAT_NOT_IMPLEMENTED;
-  VCanChanData   *chd   = fileNodePtr->chanData;
-  VCanCardData   *ccd   = chd->vCard;
-  MhydraCardData *hwdata;
+	int status = VCAN_STAT_NOT_IMPLEMENTED;
+	VCanChanData* chd = fileNodePtr->chanData;
+	VCanCardData* ccd = chd->vCard;
+	MhydraCardData* hwdata;
 
-  if ((chd == NULL) || (ccd == NULL)) {
-    return VCAN_STAT_BAD_PARAMETER;
-  }
-  hwdata = (MhydraCardData*) ccd->hwCardData;
-  if (hwdata == NULL) {
-    return VCAN_STAT_BAD_PARAMETER;
-  }
+	if ((chd == NULL) || (ccd == NULL)) {
+		return VCAN_STAT_BAD_PARAMETER;
+	}
+	hwdata = (MhydraCardData*) ccd->hwCardData;
+	if (hwdata == NULL) {
+		return VCAN_STAT_BAD_PARAMETER;
+	}
 
-  DEBUGPRINT(3, ("mhydra_special_ioctl_handler (%u)\n", ioctl_cmd));
-  switch (ioctl_cmd) {
-    default:
-      DEBUGPRINT(1, ("mhydra_special_ioctl_handler unk: %u\n", ioctl_cmd));
-      status = VCAN_STAT_NOT_IMPLEMENTED;
-  }
-  return status;
+	DEBUGPRINT(3, ("mhydra_special_ioctl_handler (%u)\n", ioctl_cmd));
+	switch (ioctl_cmd) {
+	default:
+		DEBUGPRINT(1, ("mhydra_special_ioctl_handler unk: %u\n", ioctl_cmd));
+		status = VCAN_STAT_NOT_IMPLEMENTED;
+	}
+	return status;
 }

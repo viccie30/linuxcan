@@ -67,22 +67,21 @@ typedef struct alt_flash_epcs_dev alt_flash_epcs_dev;
  *  size_in_bytes: the number of bytes of
  *  storage in this chip.
  */
-struct alt_flash_epcs_dev
-{
-  alt_flash_dev dev;
+struct alt_flash_epcs_dev {
+	alt_flash_dev dev;
 
-  volatile void * register_base;
-  uint32_t size_in_bytes;
-  uint32_t silicon_id;
-  uint32_t page_size;
+	volatile void* register_base;
+	uint32_t size_in_bytes;
+	uint32_t silicon_id;
+	uint32_t page_size;
 };
 
 /*
  *   Macros used by alt_sys_init.c
  *
  * By default this driver is initialised in alt_sys_init. However if the
- * "small driver" feature has been selected, or if fast simulation has been requested
- * no initialisation is performed.
+ * "small driver" feature has been selected, or if fast simulation has been
+ * requested no initialisation is performed.
  *
  * This causes the driver to be excluded from the system (unless explicitly
  * initialised by the user from main()), and therefore reduces code footprint.
@@ -114,7 +113,7 @@ struct alt_flash_epcs_dev
  *  The initialisation function which reads the EPCS table and fills out
  *  the appropriate sections of the the alt_flash_epcs_dev structure
  */
-int alt_epcs_flash_init(alt_flash_epcs_dev* flash, volatile void * base);
+int alt_epcs_flash_init(alt_flash_epcs_dev* flash, volatile void* base);
 
 /*
  *  Functions exported through the common Flash interface
@@ -130,23 +129,19 @@ int alt_epcs_flash_init(alt_flash_epcs_dev* flash, volatile void * base);
  * want that functionality.
  */
 
-int alt_epcs_flash_memcmp( alt_flash_dev* flash_info,
-                                  const void* src_buffer,
-                                  int offset,
-                                  size_t n );
- 
+int alt_epcs_flash_memcmp(alt_flash_dev* flash_info, const void* src_buffer,
+                          int offset, size_t n);
+
 int alt_epcs_flash_write(alt_flash_dev* flash_info, int offset,
                          const void* src_addr, int length);
 
-int alt_epcs_flash_read(alt_flash_dev* flash_info, int offset,
-                        void* dest_addr, int length);
-int alt_epcs_flash_get_info(alt_flash_fd* fd, flash_region** info,
-                            int*  );
+int alt_epcs_flash_read(alt_flash_dev* flash_info, int offset, void* dest_addr,
+                        int length);
+int alt_epcs_flash_get_info(alt_flash_fd* fd, flash_region** info, int*);
 
 int alt_epcs_flash_erase_block(alt_flash_dev* flash_info, int block_offset);
 
 int alt_epcs_flash_write_block(alt_flash_dev* flash, int block_offset,
-                               int data_offset, const void* data,
-                               int length);
+                               int data_offset, const void* data, int length);
 
 #endif /* __ALT_EPCS_FLASH_H__ */

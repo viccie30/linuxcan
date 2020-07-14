@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -65,19 +67,19 @@
 #define DLC_H
 
 #ifdef __KERNEL__
-#include <linux/types.h>
+#	include <linux/types.h>
 #else
-#include <stdint.h>
+#	include <stdint.h>
 #endif
 
-uint32_t dlc_bytes_to_dlc_fd (uint32_t n_bytes);
-uint32_t dlc_dlc_to_bytes_fd (uint32_t dlc);
+uint32_t dlc_bytes_to_dlc_fd(uint32_t n_bytes);
+uint32_t dlc_dlc_to_bytes_fd(uint32_t dlc);
 
 /*
   use this function when you want to create and check a tx-frame.
   returns 1 if dlc is ok.
 */
-uint32_t dlc_is_dlc_ok (uint32_t accept_large_dlc, uint32_t is_fd, uint32_t dlc);
+uint32_t dlc_is_dlc_ok(uint32_t accept_large_dlc, uint32_t is_fd, uint32_t dlc);
 
-uint32_t dlc_dlc_to_bytes_classic (uint32_t dlc);
+uint32_t dlc_dlc_to_bytes_classic(uint32_t dlc);
 #endif

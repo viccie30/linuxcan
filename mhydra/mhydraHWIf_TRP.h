@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -61,34 +63,35 @@
 ** -----------------------------------------------------------------------------
 */
 
-// Linux Mhydra driver routines for printf and trp 
+// Linux Mhydra driver routines for printf and trp
 
 #ifndef _MHYDRA_HW_IF_TRP_H_
 #define _MHYDRA_HW_IF_TRP_H_
 
 // defines for script/error/info printf's
-#define DM_UNSUBSCRIBE           0x1
-#define DM_SUBSCRIBE             0x2
-#define DM_ENTITY_MASK_TYPE      0xff000000
+#define DM_UNSUBSCRIBE 0x1
+#define DM_SUBSCRIBE 0x2
+#define DM_ENTITY_MASK_TYPE 0xff000000
 #define DM_ENTITY_MASK_BROADCAST 0xf0000000
-#define DM_TRAFFIC_BROADCAST     0x10000000
-#define DM_DEBUG_BROADCAST       0x20000000
-#define DM_ERROR_BROADCAST       0x30000000
-#define DM_HE(n)                 (0x01000000 | n) // DEBUG/ERROR
-#define DM_SCRIPT(n)             (0x02000000 | n) // TRAFFIC
-#define DM_ENTITY_MASK_HAS_ID    0x0f000000
-#define DM_ENTITY_MASK_ID        0x000000ff
-#define DM_GROUP(n)              (0x00400000 | (n << 16))
-#define DM_LEVEL(n)              (0x00001000 | (n <<  8))
-#define DM_ALL                   0xff
+#define DM_TRAFFIC_BROADCAST 0x10000000
+#define DM_DEBUG_BROADCAST 0x20000000
+#define DM_ERROR_BROADCAST 0x30000000
+#define DM_HE(n) (0x01000000 | n)     // DEBUG/ERROR
+#define DM_SCRIPT(n) (0x02000000 | n) // TRAFFIC
+#define DM_ENTITY_MASK_HAS_ID 0x0f000000
+#define DM_ENTITY_MASK_ID 0x000000ff
+#define DM_GROUP(n) (0x00400000 | (n << 16))
+#define DM_LEVEL(n) (0x00001000 | (n << 8))
+#define DM_ALL 0xff
 
-int mhydra_device_messages_subscription(VCanOpenFileNode *fileNodePtr, KCAN_IOCTL_DEVICE_MESSAGES_SUBSCRIPTION_T *sc);
+int mhydra_device_messages_subscription(
+        VCanOpenFileNode* fileNodePtr,
+        KCAN_IOCTL_DEVICE_MESSAGES_SUBSCRIPTION_T* sc);
 
-void printf_msg(VCanCardData *vCard, hydraHostCmd *cmd);
+void printf_msg(VCanCardData* vCard, hydraHostCmd* cmd);
 
-void fatal_msg (VCanCardData *vCard, hydraHostCmd *tmpCmd);
+void fatal_msg(VCanCardData* vCard, hydraHostCmd* tmpCmd);
 
-void trp_msg (VCanCardData *vCard, hydraHostCmd *tmpCmd);
+void trp_msg(VCanCardData* vCard, hydraHostCmd* tmpCmd);
 
-
-#endif  /* _MHYDRA_HW_IF_TRP_H_ */
+#endif /* _MHYDRA_HW_IF_TRP_H_ */

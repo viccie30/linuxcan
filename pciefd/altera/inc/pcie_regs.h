@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -69,16 +71,17 @@
 
 // Interrupt control registers in the Altera PCIe IP function
 
-// The irq register contains the interrupt status and the ien register is the interrupt enable.
-#define PCIE_IRQ_REG (0x0040/4)
-#define PCIE_IEN_REG (0x0050/4)
+// The irq register contains the interrupt status and the ien register is the
+// interrupt enable.
+#define PCIE_IRQ_REG (0x0040 / 4)
+#define PCIE_IEN_REG (0x0050 / 4)
 
-#define IOADDR_PCIE_IRQ(base)                 __IO_CALC_ADDRESS_NATIVE(base, PCIE_IRQ_REG)
-#define IORD_PCIE_IRQ(base)                   IORD(base, PCIE_IRQ_REG)
-#define IOWR_PCIE_IRQ(base, data)             IOWR(base, PCIE_IRQ_REG, data)
+#define IOADDR_PCIE_IRQ(base) __IO_CALC_ADDRESS_NATIVE(base, PCIE_IRQ_REG)
+#define IORD_PCIE_IRQ(base) IORD(base, PCIE_IRQ_REG)
+#define IOWR_PCIE_IRQ(base, data) IOWR(base, PCIE_IRQ_REG, data)
 
-#define IOADDR_PCIE_IEN(base)                 __IO_CALC_ADDRESS_NATIVE(base, PCIE_IEN_REG)
-#define IORD_PCIE_IEN(base)                   IORD(base, PCIE_IEN_REG)
-#define IOWR_PCIE_IEN(base, data)             IOWR(base, PCIE_IEN_REG, data)
+#define IOADDR_PCIE_IEN(base) __IO_CALC_ADDRESS_NATIVE(base, PCIE_IEN_REG)
+#define IORD_PCIE_IEN(base) IORD(base, PCIE_IEN_REG)
+#define IOWR_PCIE_IEN(base, data) IOWR(base, PCIE_IEN_REG, data)
 
 #endif

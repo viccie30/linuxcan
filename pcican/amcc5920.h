@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -70,31 +72,27 @@
 //
 // Chip register offsets
 //
-#define S5920_OMB    0x0C
-#define S5920_IMB    0x1C
-#define S5920_MBEF   0x34
+#define S5920_OMB 0x0C
+#define S5920_IMB 0x1C
+#define S5920_MBEF 0x34
 #define S5920_INTCSR 0x38
-#define S5920_RCR    0x3C
-#define S5920_PTCR   0x60
+#define S5920_RCR 0x3C
+#define S5920_PTCR 0x60
 
 //
 // PCI Interrupt Control/status Register (INTCSR)
 //
-#define INTCSR_INTERRUPT_ASSERTED_V     23
-#define INTCSR_INTERRUPT_ASSERTED_M     0x800000
-#define INTCSR_ADDON_INTSTAT_V          22
-#define INTCSR_ADDON_INTSTAT_M          0x400000
-#define INTCSR_ADDON_INTENABLE_V        13
-#define INTCSR_ADDON_INTENABLE_M        0x2000
-
+#define INTCSR_INTERRUPT_ASSERTED_V 23
+#define INTCSR_INTERRUPT_ASSERTED_M 0x800000
+#define INTCSR_ADDON_INTSTAT_V 22
+#define INTCSR_ADDON_INTSTAT_M 0x400000
+#define INTCSR_ADDON_INTENABLE_V 13
+#define INTCSR_ADDON_INTENABLE_M 0x2000
 
 //
 // PCI Reset Control Register (RCR)
 //
-#define RCR_ADDON_RESET_V   24
-#define RCR_ADDON_RESET_M   0x1000000
-
-
+#define RCR_ADDON_RESET_V 24
+#define RCR_ADDON_RESET_M 0x1000000
 
 #endif
-

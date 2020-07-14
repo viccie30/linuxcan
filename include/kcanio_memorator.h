@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -72,47 +74,47 @@
 #define KCANIO_MEMORATOR_H
 
 //---------------------------------------------------------------------------
-// NOTE that these defines HAVE to exactly match the defines in both hydra_host_cmds.h
-// and filo_cmds.h, if you add a define add a compiler assert in /drv/
+// NOTE that these defines HAVE to exactly match the defines in both
+// hydra_host_cmds.h and filo_cmds.h, if you add a define add a compiler assert
+// in /drv/
 //---------------------------------------------------------------------------
 
-#define KCANIO_MEMO_STATUS_SUCCESS                    0
-#define KCANIO_MEMO_STATUS_MORE_DATA                  1
-#define KCANIO_MEMO_STATUS_UNKNOWN_COMMAND            2
-#define KCANIO_MEMO_STATUS_FAILED                     3 // .data[] contains more info
-#define KCANIO_MEMO_STATUS_EOF                        4
+#define KCANIO_MEMO_STATUS_SUCCESS 0
+#define KCANIO_MEMO_STATUS_MORE_DATA 1
+#define KCANIO_MEMO_STATUS_UNKNOWN_COMMAND 2
+#define KCANIO_MEMO_STATUS_FAILED 3 // .data[] contains more info
+#define KCANIO_MEMO_STATUS_EOF 4
 
 // *All*K subcommands to be in one number series
-#define KCANIO_MEMO_SUBCMD_GET_FS_INFO                1 // Get DOS filesys info; for get_data
-#define KCANIO_MEMO_SUBCMD_GET_DISK_INFO_A            2 // Get disk info; for get_data
-#define KCANIO_MEMO_SUBCMD_GET_DISK_INFO_B            3 // Get logio info; for get_data
+#define KCANIO_MEMO_SUBCMD_GET_FS_INFO 1 // Get DOS filesys info; for get_data
+#define KCANIO_MEMO_SUBCMD_GET_DISK_INFO_A 2 // Get disk info; for get_data
+#define KCANIO_MEMO_SUBCMD_GET_DISK_INFO_B 3 // Get logio info; for get_data
 
-#define KCANIO_MEMO_SUBCMD_READ_PHYSICAL_SECTOR       4
-#define KCANIO_MEMO_SUBCMD_WRITE_PHYSICAL_SECTOR      5
-#define KCANIO_MEMO_SUBCMD_ERASE_PHYSICAL_SECTOR      6
-#define KCANIO_MEMO_SUBCMD_READ_LOGICAL_SECTOR        7
-#define KCANIO_MEMO_SUBCMD_WRITE_LOGICAL_SECTOR       8
-#define KCANIO_MEMO_SUBCMD_ERASE_LOGICAL_SECTOR       9
+#define KCANIO_MEMO_SUBCMD_READ_PHYSICAL_SECTOR 4
+#define KCANIO_MEMO_SUBCMD_WRITE_PHYSICAL_SECTOR 5
+#define KCANIO_MEMO_SUBCMD_ERASE_PHYSICAL_SECTOR 6
+#define KCANIO_MEMO_SUBCMD_READ_LOGICAL_SECTOR 7
+#define KCANIO_MEMO_SUBCMD_WRITE_LOGICAL_SECTOR 8
+#define KCANIO_MEMO_SUBCMD_ERASE_LOGICAL_SECTOR 9
 
-#define KCANIO_MEMO_SUBCMD_FORMAT_DISK               10 // Format disk (FAT16 or -32) asyncop
-#define KCANIO_MEMO_SUBCMD_INIT_DISK                 11 // Create logdata.kmf, asyncop
-#define KCANIO_MEMO_SUBCMD_CLEAR_DATA                12 // Clear logdata.kmf, asyncop
+#define KCANIO_MEMO_SUBCMD_FORMAT_DISK 10 // Format disk (FAT16 or -32) asyncop
+#define KCANIO_MEMO_SUBCMD_INIT_DISK 11   // Create logdata.kmf, asyncop
+#define KCANIO_MEMO_SUBCMD_CLEAR_DATA 12  // Clear logdata.kmf, asyncop
 
-#define KCANIO_MEMO_SUBCMD_GET_MISC_INFO             13 // for get_data
-#define KCANIO_MEMO_SUBCMD_GET_RTC_INFO              14 // for get_data
-#define KCANIO_MEMO_SUBCMD_PUT_RTC_INFO              15 // for put_data
+#define KCANIO_MEMO_SUBCMD_GET_MISC_INFO 13 // for get_data
+#define KCANIO_MEMO_SUBCMD_GET_RTC_INFO 14  // for get_data
+#define KCANIO_MEMO_SUBCMD_PUT_RTC_INFO 15  // for put_data
 
-#define KCANIO_MEMO_SUBCMD_GET_FS_INFO_B             16 // Get various filesystem info
+#define KCANIO_MEMO_SUBCMD_GET_FS_INFO_B 16 // Get various filesystem info
 
-#define KCANIO_MEMO_SUBCMD_FASTREAD_PHYSICAL_SECTOR  17
-#define KCANIO_MEMO_SUBCMD_FASTREAD_LOGICAL_SECTOR   18
+#define KCANIO_MEMO_SUBCMD_FASTREAD_PHYSICAL_SECTOR 17
+#define KCANIO_MEMO_SUBCMD_FASTREAD_LOGICAL_SECTOR 18
 
-#define KCANIO_MEMO_SUBCMD_OPEN_FILE                 19
-#define KCANIO_MEMO_SUBCMD_READ_FILE                 20
-#define KCANIO_MEMO_SUBCMD_CLOSE_FILE                21
-#define KCANIO_MEMO_SUBCMD_WRITE_FILE                22
-#define KCANIO_MEMO_SUBCMD_DELETE_FILE               23
-
+#define KCANIO_MEMO_SUBCMD_OPEN_FILE 19
+#define KCANIO_MEMO_SUBCMD_READ_FILE 20
+#define KCANIO_MEMO_SUBCMD_CLOSE_FILE 21
+#define KCANIO_MEMO_SUBCMD_WRITE_FILE 22
+#define KCANIO_MEMO_SUBCMD_DELETE_FILE 23
 
 /*****************************************************************************/
 

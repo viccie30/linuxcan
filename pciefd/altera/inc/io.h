@@ -37,29 +37,27 @@
 #include <asm/io.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif /* __cplusplus */
 
 #define SYSTEM_BUS_WIDTH (32)
 
 #ifndef SYSTEM_BUS_WIDTH
-#error SYSTEM_BUS_WIDTH undefined
+#	error SYSTEM_BUS_WIDTH undefined
 #endif
 
 /* Native bus access functions */
 
-#define __IO_CALC_ADDRESS_NATIVE(BASE, REGNUM) \
-  ((void *)(((unsigned char*)BASE) + ((REGNUM) * (SYSTEM_BUS_WIDTH/8))))
+#define __IO_CALC_ADDRESS_NATIVE(BASE, REGNUM)                                 \
+	((void*) (((unsigned char*) BASE) + ((REGNUM) * (SYSTEM_BUS_WIDTH / 8))))
 
-#define IORD(BASE, REGNUM) \
-  ioread32(__IO_CALC_ADDRESS_NATIVE(BASE,REGNUM))
+#define IORD(BASE, REGNUM) ioread32(__IO_CALC_ADDRESS_NATIVE(BASE, REGNUM))
 
-#define IOWR(BASE, REGNUM, DATA) \
-  iowrite32(DATA, __IO_CALC_ADDRESS_NATIVE(BASE,REGNUM))
+#define IOWR(BASE, REGNUM, DATA)                                               \
+	iowrite32(DATA, __IO_CALC_ADDRESS_NATIVE(BASE, REGNUM))
 
-#define IOWR_REP(BASE, REGNUM, DATA, REP) \
-  iowrite32_rep(__IO_CALC_ADDRESS_NATIVE(BASE, REGNUM), DATA, REP)
+#define IOWR_REP(BASE, REGNUM, DATA, REP)                                      \
+	iowrite32_rep(__IO_CALC_ADDRESS_NATIVE(BASE, REGNUM), DATA, REP)
 
 #ifdef __cplusplus
 }

@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -66,65 +68,97 @@
 #include "vcan_ioctl.h"
 #include "hydra_host_cmds.h"
 
-static void set_capability (uint32_t *self, uint32_t cap, uint32_t to)
+static void set_capability(uint32_t* self, uint32_t cap, uint32_t to)
 {
-  if (to) {
-    *self |= cap;
-  } else {
-    *self &= ~cap;
-  }
+	if (to) {
+		*self |= cap;
+	}
+	else {
+		*self &= ~cap;
+	}
 }
 
-void set_capability_value (VCanCardData *vCard, uint32_t cap, uint32_t to, uint32_t channel_mask, uint32_t n_channels_max)
+void set_capability_value(VCanCardData* vCard, uint32_t cap, uint32_t to,
+                          uint32_t channel_mask, uint32_t n_channels_max)
 {
-  uint32_t i;
-  for (i = 0; i < n_channels_max; i++) {
-    if ((1 << i) & channel_mask) {
-      VCanChanData *vChd = vCard->chanData[i];
-      set_capability (&vChd->capabilities, cap, to);
-    }
-  }
+	uint32_t i;
+	for (i = 0; i < n_channels_max; i++) {
+		if ((1 << i) & channel_mask) {
+			VCanChanData* vChd = vCard->chanData[i];
+			set_capability(&vChd->capabilities, cap, to);
+		}
+	}
 }
 EXPORT_SYMBOL(set_capability_value);
 
-void set_capability_mask (VCanCardData *vCard, uint32_t cap, uint32_t to, uint32_t channel_mask, uint32_t n_channels_max)
+void set_capability_mask(VCanCardData* vCard, uint32_t cap, uint32_t to,
+                         uint32_t channel_mask, uint32_t n_channels_max)
 {
-  uint32_t i;
-  for (i = 0; i < n_channels_max; i++) {
-    if ((1 << i) & channel_mask) {
-      VCanChanData *vChd = vCard->chanData[i];
-      set_capability (&vChd->capabilities_mask, cap, to);
-    }
-  }
+	uint32_t i;
+	for (i = 0; i < n_channels_max; i++) {
+		if ((1 << i) & channel_mask) {
+			VCanChanData* vChd = vCard->chanData[i];
+			set_capability(&vChd->capabilities_mask, cap, to);
+		}
+	}
 }
 EXPORT_SYMBOL(set_capability_mask);
 
-uint8_t convert_vcan_to_hydra_cmd (uint32_t vcan_cmd) {
-  switch (vcan_cmd) {
-    case VCAN_CHANNEL_CAP_SILENTMODE:          return CAP_SUB_CMD_SILENT_MODE; break;
-    case VCAN_CHANNEL_CAP_SEND_ERROR_FRAMES:   return CAP_SUB_CMD_ERRFRAME; break;
-    case VCAN_CHANNEL_CAP_BUSLOAD_CALCULATION: return CAP_SUB_CMD_BUS_STATS; break;
-    case VCAN_CHANNEL_CAP_ERROR_COUNTERS:      return CAP_SUB_CMD_ERRCOUNT_READ; break;
-    case VCAN_CHANNEL_CAP_SINGLE_SHOT:         return CAP_SUB_CMD_SINGLE_SHOT; break;
-    case VCAN_CHANNEL_CAP_SYNC_TX_FLUSH:       return CAP_SUB_CMD_SYNC_TX_FLUSH; break;
-    case VCAN_CHANNEL_CAP_LIN_HYBRID:          return CAP_SUB_CMD_LIN_HYBRID; break;
-    case VCAN_CHANNEL_CAP_HAS_LOGGER:          return CAP_SUB_CMD_HAS_LOGGER; break;
-    case VCAN_CHANNEL_CAP_HAS_REMOTE:          return CAP_SUB_CMD_HAS_REMOTE; break;
-    case VCAN_CHANNEL_CAP_HAS_SCRIPT:          return CAP_SUB_CMD_HAS_SCRIPT; break;
-    case VCAN_CHANNEL_CAP_HAS_IO_API:          return CAP_SUB_CMD_HAS_IO_API; break;
-    case VCAN_CHANNEL_CAP_DIAGNOSTICS:         return CAP_SUB_CMD_HAS_KDI; break;
-    default: return 0; break;
-  }
+uint8_t convert_vcan_to_hydra_cmd(uint32_t vcan_cmd)
+{
+	switch (vcan_cmd) {
+	case VCAN_CHANNEL_CAP_SILENTMODE:
+		return CAP_SUB_CMD_SILENT_MODE;
+		break;
+	case VCAN_CHANNEL_CAP_SEND_ERROR_FRAMES:
+		return CAP_SUB_CMD_ERRFRAME;
+		break;
+	case VCAN_CHANNEL_CAP_BUSLOAD_CALCULATION:
+		return CAP_SUB_CMD_BUS_STATS;
+		break;
+	case VCAN_CHANNEL_CAP_ERROR_COUNTERS:
+		return CAP_SUB_CMD_ERRCOUNT_READ;
+		break;
+	case VCAN_CHANNEL_CAP_SINGLE_SHOT:
+		return CAP_SUB_CMD_SINGLE_SHOT;
+		break;
+	case VCAN_CHANNEL_CAP_SYNC_TX_FLUSH:
+		return CAP_SUB_CMD_SYNC_TX_FLUSH;
+		break;
+	case VCAN_CHANNEL_CAP_LIN_HYBRID:
+		return CAP_SUB_CMD_LIN_HYBRID;
+		break;
+	case VCAN_CHANNEL_CAP_HAS_LOGGER:
+		return CAP_SUB_CMD_HAS_LOGGER;
+		break;
+	case VCAN_CHANNEL_CAP_HAS_REMOTE:
+		return CAP_SUB_CMD_HAS_REMOTE;
+		break;
+	case VCAN_CHANNEL_CAP_HAS_SCRIPT:
+		return CAP_SUB_CMD_HAS_SCRIPT;
+		break;
+	case VCAN_CHANNEL_CAP_HAS_IO_API:
+		return CAP_SUB_CMD_HAS_IO_API;
+		break;
+	case VCAN_CHANNEL_CAP_DIAGNOSTICS:
+		return CAP_SUB_CMD_HAS_KDI;
+		break;
+	default:
+		return 0;
+		break;
+	}
 }
 EXPORT_SYMBOL(convert_vcan_to_hydra_cmd);
 
-int card_has_capability (VCanCardData *vCard, uint32_t cap, uint32_t n_channels_max)
+int card_has_capability(VCanCardData* vCard, uint32_t cap,
+                        uint32_t n_channels_max)
 {
-  uint32_t i;
-  for (i = 0; i < n_channels_max; i++) {
-    VCanChanData *vChd = vCard->chanData[i];
-    if (vChd->capabilities & cap) return 1;
-  }
-  return 0;
+	uint32_t i;
+	for (i = 0; i < n_channels_max; i++) {
+		VCanChanData* vChd = vCard->chanData[i];
+		if (vChd->capabilities & cap)
+			return 1;
+	}
+	return 0;
 }
 EXPORT_SYMBOL(card_has_capability);

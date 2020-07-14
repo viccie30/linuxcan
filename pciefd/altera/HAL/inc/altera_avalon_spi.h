@@ -35,39 +35,37 @@
 //#include "alt_types.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif /* __cplusplus */
 
-  /*
-   * Macros used by alt_sys_init
-   */
+/*
+ * Macros used by alt_sys_init
+ */
 
 #define ALTERA_AVALON_SPI_INSTANCE(name, device) extern int alt_no_storage
 #define ALTERA_AVALON_SPI_INIT(name, device) while (0)
 
-  /*
-   * Use this function to perform one SPI access on your target.  'base' should
-   * be the base address of your SPI peripheral, while 'slave' indicates which
-   * bit in the slave select register should be set.
-   */
+/*
+ * Use this function to perform one SPI access on your target.  'base' should
+ * be the base address of your SPI peripheral, while 'slave' indicates which
+ * bit in the slave select register should be set.
+ */
 
-  /* If you need to make multiple accesses to the same slave then you should 
-   * set the merge bit in the flags for all of them except the first.
-   */
+/* If you need to make multiple accesses to the same slave then you should
+ * set the merge bit in the flags for all of them except the first.
+ */
 #define ALT_AVALON_SPI_COMMAND_MERGE (0x01)
 
-  /*
-   * If you need the slave select line to be toggled between words then you
-   * should set the toggle bit in the flag.
-   */
+/*
+ * If you need the slave select line to be toggled between words then you
+ * should set the toggle bit in the flag.
+ */
 #define ALT_AVALON_SPI_COMMAND_TOGGLE_SS_N (0x02)
 
-
-  int alt_avalon_spi_command(volatile void * base, uint32_t slave,
-                             uint32_t write_length, const uint8_t * write_data,
-                             uint32_t read_length, uint8_t * read_data,
-                             uint32_t flags);
+int alt_avalon_spi_command(volatile void* base, uint32_t slave,
+                           uint32_t write_length, const uint8_t* write_data,
+                           uint32_t read_length, uint8_t* read_data,
+                           uint32_t flags);
 
 #ifdef __cplusplus
 }

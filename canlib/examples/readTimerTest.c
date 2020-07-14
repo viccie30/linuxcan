@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -77,80 +79,80 @@ static int willExit = 0;
 
 static void check(char* id, canStatus stat)
 {
-  if (stat != canOK) {
-    char buf[50];
-    buf[0] = '\0';
-    canGetErrorText(stat, buf, sizeof(buf));
-    printf("%s: failed, stat=%d (%s)\n", id, (int)stat, buf);
-  }
+	if (stat != canOK) {
+		char buf[50];
+		buf[0] = '\0';
+		canGetErrorText(stat, buf, sizeof(buf));
+		printf("%s: failed, stat=%d (%s)\n", id, (int) stat, buf);
+	}
 }
 
-static void printUsageAndExit(char *prgName)
+static void printUsageAndExit(char* prgName)
 {
-  printf("Usage: '%s <channel>'\n", prgName);
-  exit(1);
+	printf("Usage: '%s <channel>'\n", prgName);
+	exit(1);
 }
 
 static void sighand(int sig)
 {
-  (void)sig;
-  willExit = 1;
+	(void) sig;
+	willExit = 1;
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-  unsigned long time, last = 0, lastsys = 0;
-  canStatus stat;
-  canHandle hnd;
-  struct timeval tv;
-  int channel;
+	unsigned long time, last = 0, lastsys = 0;
+	canStatus stat;
+	canHandle hnd;
+	struct timeval tv;
+	int channel;
 
-  if (argc != 2) {
-    printUsageAndExit(argv[0]);
-  }
+	if (argc != 2) {
+		printUsageAndExit(argv[0]);
+	}
 
-  {
-    char *endPtr = NULL;
-    errno = 0;
-    channel = strtol(argv[1], &endPtr, 10);
-    if ( (errno != 0) || ((channel == 0) && (endPtr == argv[1])) ) {
-      printUsageAndExit(argv[0]);
-    }
-  }
+	{
+		char* endPtr = NULL;
+		errno = 0;
+		channel = strtol(argv[1], &endPtr, 10);
+		if ((errno != 0) || ((channel == 0) && (endPtr == argv[1]))) {
+			printUsageAndExit(argv[0]);
+		}
+	}
 
-  /* Allow signals to interrupt syscalls */
-  signal(SIGINT, sighand);
-  siginterrupt(SIGINT, 1);
+	/* Allow signals to interrupt syscalls */
+	signal(SIGINT, sighand);
+	siginterrupt(SIGINT, 1);
 
-  canInitializeLibrary();
+	canInitializeLibrary();
 
-  hnd = canOpenChannel(channel, 0);
-  if (hnd < 0) {
-    printf("canOpenChannel %d", channel);
-    check("", hnd);
-    return -1;
-  }
+	hnd = canOpenChannel(channel, 0);
+	if (hnd < 0) {
+		printf("canOpenChannel %d", channel);
+		check("", hnd);
+		return -1;
+	}
 
-  while (!willExit) {
-    stat = canReadTimer(hnd, &time);
-    if (stat != canOK) {
-      check("canReadTimer", stat);
-      break;
-    }
-    printf("Time=%lu ms (%lu)\n", time, time - last);
-    gettimeofday(&tv, NULL);
-    printf("system:%lu\n", tv.tv_sec * 1000 + tv.tv_usec / 1000 - lastsys);
-    last = time;
-    lastsys = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-    sleep(1);
-  }
-  canClose(hnd);
+	while (!willExit) {
+		stat = canReadTimer(hnd, &time);
+		if (stat != canOK) {
+			check("canReadTimer", stat);
+			break;
+		}
+		printf("Time=%lu ms (%lu)\n", time, time - last);
+		gettimeofday(&tv, NULL);
+		printf("system:%lu\n", tv.tv_sec * 1000 + tv.tv_usec / 1000 - lastsys);
+		last = time;
+		lastsys = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+		sleep(1);
+	}
+	canClose(hnd);
 
-  stat = canUnloadLibrary();
-  if (stat != canOK) {
-    check("canUnloadLibrary", stat);
-    return -1;
-  }
+	stat = canUnloadLibrary();
+	if (stat != canOK) {
+		check("canUnloadLibrary", stat);
+		return -1;
+	}
 
-  return 0;
+	return 0;
 }

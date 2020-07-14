@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -72,139 +74,147 @@
 #include <errno.h>
 #include <unistd.h>
 
-#define ALARM_INTERVAL_IN_S   (1)
-#define READ_WAIT_INFINITE    (unsigned long)(-1)
+#define ALARM_INTERVAL_IN_S (1)
+#define READ_WAIT_INFINITE (unsigned long) (-1)
 
 static unsigned int msgCounter = 0;
 static unsigned int std = 0, ext = 0, rtr = 0, err = 0, over = 0;
 
 static void check(char* id, canStatus stat)
 {
-  if (stat != canOK) {
-    char buf[50];
-    buf[0] = '\0';
-    canGetErrorText(stat, buf, sizeof(buf));
-    printf("%s: failed, stat=%d (%s)\n", id, (int)stat, buf);
-  }
+	if (stat != canOK) {
+		char buf[50];
+		buf[0] = '\0';
+		canGetErrorText(stat, buf, sizeof(buf));
+		printf("%s: failed, stat=%d (%s)\n", id, (int) stat, buf);
+	}
 }
 
 static void sighand(int sig)
 {
-  static unsigned int last;
+	static unsigned int last;
 
-  switch (sig) {
-  case SIGINT:
-    break;
-  case SIGALRM:
-    if (msgCounter - last) {
-      printf("msg/s = %d, total=%u, std=%u, ext=%u, err=%u, over=%u\n",
-             (msgCounter - last) / ALARM_INTERVAL_IN_S, msgCounter, std, ext, err, over);
-    }
-    last = msgCounter;
-    alarm(ALARM_INTERVAL_IN_S);
-    break;
-  }
+	switch (sig) {
+	case SIGINT:
+		break;
+	case SIGALRM:
+		if (msgCounter - last) {
+			printf("msg/s = %d, total=%u, std=%u, ext=%u, err=%u, over=%u\n",
+			       (msgCounter - last) / ALARM_INTERVAL_IN_S, msgCounter, std,
+			       ext, err, over);
+		}
+		last = msgCounter;
+		alarm(ALARM_INTERVAL_IN_S);
+		break;
+	}
 }
 
-static void printUsageAndExit(char *prgName)
+static void printUsageAndExit(char* prgName)
 {
-  printf("Usage: '%s <channel>'\n", prgName);
-  exit(1);
+	printf("Usage: '%s <channel>'\n", prgName);
+	exit(1);
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-  canHandle hnd;
-  canStatus stat;
-  int channel;
+	canHandle hnd;
+	canStatus stat;
+	int channel;
 
-  if (argc != 2) {
-    printUsageAndExit(argv[0]);
-  }
+	if (argc != 2) {
+		printUsageAndExit(argv[0]);
+	}
 
-  {
-    char *endPtr = NULL;
-    errno = 0;
-    channel = strtol(argv[1], &endPtr, 10);
-    if ( (errno != 0) || ((channel == 0) && (endPtr == argv[1])) ) {
-      printUsageAndExit(argv[0]);
-    }
-  }
+	{
+		char* endPtr = NULL;
+		errno = 0;
+		channel = strtol(argv[1], &endPtr, 10);
+		if ((errno != 0) || ((channel == 0) && (endPtr == argv[1]))) {
+			printUsageAndExit(argv[0]);
+		}
+	}
 
-  /* Use sighand as our signal handler */
-  signal(SIGALRM, sighand);
-  signal(SIGINT, sighand);
+	/* Use sighand as our signal handler */
+	signal(SIGALRM, sighand);
+	signal(SIGINT, sighand);
 
-  /* Allow signals to interrupt syscalls */
-  siginterrupt(SIGINT, 1);
+	/* Allow signals to interrupt syscalls */
+	siginterrupt(SIGINT, 1);
 
-  printf("Counting messages on channel %d\n", channel);
+	printf("Counting messages on channel %d\n", channel);
 
-  canInitializeLibrary();
+	canInitializeLibrary();
 
-  /* Open channel, set parameters and go on bus */
-  hnd = canOpenChannel(channel, canOPEN_EXCLUSIVE | canOPEN_REQUIRE_EXTENDED | canOPEN_ACCEPT_VIRTUAL);
-  if (hnd < 0) {
-    printf("canOpenChannel %d", channel);
-    check("", hnd);
-    return -1;
-  }
+	/* Open channel, set parameters and go on bus */
+	hnd = canOpenChannel(channel, canOPEN_EXCLUSIVE | canOPEN_REQUIRE_EXTENDED |
+	                                      canOPEN_ACCEPT_VIRTUAL);
+	if (hnd < 0) {
+		printf("canOpenChannel %d", channel);
+		check("", hnd);
+		return -1;
+	}
 
-  stat = canSetBusParams(hnd, canBITRATE_1M, 0, 0, 0, 0, 0);
-  check("canSetBusParams", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
-  stat = canBusOn(hnd);
-  check("canBusOn", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
+	stat = canSetBusParams(hnd, canBITRATE_1M, 0, 0, 0, 0, 0);
+	check("canSetBusParams", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
+	stat = canBusOn(hnd);
+	check("canBusOn", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
 
-  alarm(ALARM_INTERVAL_IN_S);
+	alarm(ALARM_INTERVAL_IN_S);
 
-  do {
-    long id;
-    unsigned char msg[8];
-    unsigned int dlc;
-    unsigned int flag;
-    unsigned long time;
+	do {
+		long id;
+		unsigned char msg[8];
+		unsigned int dlc;
+		unsigned int flag;
+		unsigned long time;
 
-    stat = canReadWait(hnd, &id, &msg, &dlc, &flag, &time, READ_WAIT_INFINITE);
+		stat = canReadWait(hnd, &id, &msg, &dlc, &flag, &time,
+		                   READ_WAIT_INFINITE);
 
-    if (stat == canOK) {
-      if (flag & canMSG_ERROR_FRAME) {
-        err++;
-      } else {
-        if (flag & canMSG_STD)        std++;
-        if (flag & canMSG_EXT)        ext++;
-        if (flag & canMSG_RTR)        rtr++;
-        if (flag & canMSGERR_OVERRUN) over++;
-      }
-      msgCounter++;
-    }
-    else {
-      if (errno == 0) {
-        check("\ncanReadWait", stat);
-      }
-      else {
-        perror("\ncanReadWait error");
-      }
-    }
+		if (stat == canOK) {
+			if (flag & canMSG_ERROR_FRAME) {
+				err++;
+			}
+			else {
+				if (flag & canMSG_STD)
+					std++;
+				if (flag & canMSG_EXT)
+					ext++;
+				if (flag & canMSG_RTR)
+					rtr++;
+				if (flag & canMSGERR_OVERRUN)
+					over++;
+			}
+			msgCounter++;
+		}
+		else {
+			if (errno == 0) {
+				check("\ncanReadWait", stat);
+			}
+			else {
+				perror("\ncanReadWait error");
+			}
+		}
 
-  } while (stat == canOK);
+	} while (stat == canOK);
 
-  sighand(SIGALRM);
+	sighand(SIGALRM);
 
 ErrorExit:
 
-  alarm(0);
-  stat = canBusOff(hnd);
-  check("canBusOff", stat);
-  stat = canClose(hnd);
-  check("canClose", stat);
-  stat = canUnloadLibrary();
-  check("canUnloadLibrary", stat);
+	alarm(0);
+	stat = canBusOff(hnd);
+	check("canBusOff", stat);
+	stat = canClose(hnd);
+	check("canClose", stat);
+	stat = canUnloadLibrary();
+	check("canUnloadLibrary", stat);
 
-  return 0;
+	return 0;
 }

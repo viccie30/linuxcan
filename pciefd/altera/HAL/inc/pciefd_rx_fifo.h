@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -66,37 +68,36 @@
 
 #include "VCanOsIf.h"
 
-unsigned int fifoIrqStatus(void * base);
-void fifoIrqClear(void * base, unsigned int icl);
-void fifoIrqInit(void * base);
-void fifoIrqEnableReceivedDataAvailable(void * base);
+unsigned int fifoIrqStatus(void* base);
+void fifoIrqClear(void* base, unsigned int icl);
+void fifoIrqInit(void* base);
+void fifoIrqEnableReceivedDataAvailable(void* base);
 
-void fifoIrqEnableIllegalAccess(void * base);
-void fifoIrqEnableUnalignedRead(void * base);
-void fifoIrqEnableMissingTag(void * base);
-void fifoIrqEnableUnderflow(void * base);
+void fifoIrqEnableIllegalAccess(void* base);
+void fifoIrqEnableUnalignedRead(void* base);
+void fifoIrqEnableMissingTag(void* base);
+void fifoIrqEnableUnderflow(void* base);
 
-int fifoPacketCountRx(void * base);
-int fifoPacketCountRxMax(void * base);
+int fifoPacketCountRx(void* base);
+int fifoPacketCountRxMax(void* base);
 
-int fifoDataAvailable(void * base);
-int dmaIdle(void * base);
+int fifoDataAvailable(void* base);
+int dmaIdle(void* base);
 
-int fifoOffset(void * base);
-int fifoChannelId(void * base);
-int fifoDataAvailableWords(void * base);
+int fifoOffset(void* base);
+int fifoChannelId(void* base);
+int fifoDataAvailableWords(void* base);
 
+int hwSupportDMA(void* base);
 
-int hwSupportDMA(void * base);
+int isEOP(void* base);
+int readFIFO(VCanCardData* vCard, pciefd_packet_t* packet);
 
-int isEOP(void * base);
-int readFIFO(VCanCardData *vCard, pciefd_packet_t *packet);
+void enableDMA(void* base);
+void disableDMA(void* base);
 
-void enableDMA(void *base);
-void disableDMA(void *base);
-
-void armDMA0(void * base);
-void armDMA1(void * base);
-void armDMA(void * base, int id);
+void armDMA0(void* base);
+void armDMA1(void* base);
+void armDMA(void* base, int id);
 
 #endif

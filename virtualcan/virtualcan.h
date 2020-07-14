@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -72,36 +74,32 @@
 /* defines */
 /*****************************************************************************/
 
-#define DEVICE_NAME_STRING   "kvvirtualcan"
+#define DEVICE_NAME_STRING "kvvirtualcan"
 
-#define NR_CHANNELS          2
-#define MAX_CHANNELS         NR_CHANNELS
+#define NR_CHANNELS 2
+#define MAX_CHANNELS NR_CHANNELS
 
-#define NR_VIRTUAL_DEV       1
-#define VIRTUAL_MAX_DEV      NR_VIRTUAL_DEV
+#define NR_VIRTUAL_DEV 1
+#define VIRTUAL_MAX_DEV NR_VIRTUAL_DEV
 
-#define MAX_ERROR_COUNT        128
-#define ERROR_RATE           30000
+#define MAX_ERROR_COUNT 128
+#define ERROR_RATE 30000
 #define VIRTUAL_BYTES_PER_CIRCUIT 0x20
 
 #define VIRTUAL_MAX_OUTSTANDING 300
 
-
-
-
 /* Channel specific data */
-typedef struct virtualChanData
-{
-    VCanBusParams busparams;
-    struct work_struct txTaskQ;
-    int silentmode;
-    atomic_t outstanding_tx;
+typedef struct virtualChanData {
+	VCanBusParams busparams;
+	struct work_struct txTaskQ;
+	int silentmode;
+	atomic_t outstanding_tx;
 } virtualChanData;
 
 /*  Cards specific data */
 typedef struct virtualCardData {
-    /* Ports and addresses */
-    unsigned           pciIf;
+	/* Ports and addresses */
+	unsigned pciIf;
 } virtualCardData;
 
-#endif  /* _VIRTUAL_HW_IF_H_ */
+#endif /* _VIRTUAL_HW_IF_H_ */

@@ -43,13 +43,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA
  *
  *
  * IMPORTANT NOTICE:
  * ==============================================================================
- * This source code is made available for free, as an open license, by Kvaser AB,
- * for use with its applications. Kvaser AB does not accept any liability
+ * This source code is made available for free, as an open license, by Kvaser
+ * AB, for use with its applications. Kvaser AB does not accept any liability
  * whatsoever for any third party patent or other immaterial property rights
  * violations that may result from any usage of this source code, regardless of
  * the combination of source code and various applications that it can be used
@@ -62,20 +63,23 @@
  * \file obsolete.h
  * \brief Definitions which are retained for compatibility.
  * \details
-*/
-
+ */
 
 #ifndef _OBSOLETE_H_
 #define _OBSOLETE_H_
-
 
 /**
  * \name retained for compatibility
  * \warning Obsolete!
  * @{
  */
-#define canCHANNEL_CAP_CAN_DIAGNOSTICS  canCHANNEL_CAP_RESERVED_2 ///< Obsolete, can report CAN diagnostics. Only used by LAPcan driver.
-#define canCHANNEL_CAP_REMOTE           canCHANNEL_CAP_RESERVED_1 ///< Obsolete, use \ref canCHANNEL_CAP_REMOTE_ACCESS or \ref canCHANNELDATA_IS_REMOTE
+#define canCHANNEL_CAP_CAN_DIAGNOSTICS                                         \
+	canCHANNEL_CAP_RESERVED_2 ///< Obsolete, can report CAN diagnostics. Only
+	                          ///< used by LAPcan driver.
+#define canCHANNEL_CAP_REMOTE                                                  \
+	canCHANNEL_CAP_RESERVED_1 ///< Obsolete, use \ref
+	                          ///< canCHANNEL_CAP_REMOTE_ACCESS or \ref
+	                          ///< canCHANNELDATA_IS_REMOTE
 
 /** @} */
 

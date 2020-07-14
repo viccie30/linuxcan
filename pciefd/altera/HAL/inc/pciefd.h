@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -69,87 +71,87 @@
 #include "HAL/inc/pciefd_packet.h"
 #include "VCanOsIf.h"
 
-extern char *pciefd_ctrl_reg_names[];
+extern char* pciefd_ctrl_reg_names[];
 
-int statResetRequest(void * base);
-int statInResetMode(void * base);
-int statTransmitterIdle(void * base);
-int statAbortRequest(void * base);
-int statPendingRequest(void *base);
-int statIdle(void *base);
-int statFlushRequest(void * base);
+int statResetRequest(void* base);
+int statInResetMode(void* base);
+int statTransmitterIdle(void* base);
+int statAbortRequest(void* base);
+int statPendingRequest(void* base);
+int statIdle(void* base);
+int statFlushRequest(void* base);
 
-int istatTransmitterFlushDone(void * base);
-void irqClearTransmitterFlushDone(void * base);
+int istatTransmitterFlushDone(void* base);
+void irqClearTransmitterFlushDone(void* base);
 
-int fifoPacketCountTx(void * base);
-int fifoPacketCountTxMax(void * base);
+int fifoPacketCountTx(void* base);
+int fifoPacketCountTxMax(void* base);
 
-int hwSupportCanFD(void * base);
-int hwSupportCAP(void * base);
+int hwSupportCanFD(void* base);
+int hwSupportCAP(void* base);
 
-int readIrqReceiverOverflow(void * base);
+int readIrqReceiverOverflow(void* base);
 unsigned int irqReceiverOverflow(unsigned int irq);
 
-int readIrqReceiverUnaligned(void * base);
+int readIrqReceiverUnaligned(void* base);
 unsigned int irqReceiverUnaligned(unsigned int irq);
 
-int readIrqTransmitterOverflow(void * base);
+int readIrqTransmitterOverflow(void* base);
 unsigned int irqTransmitterOverflow(unsigned int irq);
 unsigned int irqTransmitterEmpty(unsigned int irq);
-int irqDisableTransmitterEmpty(void * base);
+int irqDisableTransmitterEmpty(void* base);
 
-int readIrqTransmitterUnderflow(void * base);
+int readIrqTransmitterUnderflow(void* base);
 unsigned int irqTransmitterUnderflow(unsigned int irq);
 
-int readIrqTransmitterUnaligned(void * base);
+int readIrqTransmitterUnaligned(void* base);
 unsigned int irqTransmitterUnaligned(unsigned int irq);
 
-void irqClearReceivedDataAvailable(void * base);
+void irqClearReceivedDataAvailable(void* base);
 unsigned int irqReceivedDataAvailable(unsigned int irq);
-void irqEnableReceivedDataAvailable(void * base);
-void irqEnableTransmitterError(void * base);
-void irqEnableTransmitFifoEmpty(void * base);
-void irqClearTransmitFifoEmpty(void * base);
+void irqEnableReceivedDataAvailable(void* base);
+void irqEnableTransmitterError(void* base);
+void irqEnableTransmitFifoEmpty(void* base);
+void irqClearTransmitFifoEmpty(void* base);
 
-void irqClearReceivedUnaligned(void * base);
+void irqClearReceivedUnaligned(void* base);
 
-int irqEnabled(void * base);
-unsigned int irqStatus(void * base);
-void irqClear(void * base, unsigned int icl);
-int istatCheck(void * base, uint32_t icl);
-void irqInit(void * base);
+int irqEnabled(void* base);
+unsigned int irqStatus(void* base);
+void irqClear(void* base, unsigned int icl);
+int istatCheck(void* base, uint32_t icl);
+void irqInit(void* base);
 
-void enableErrorPackets(void * base);
-void disableErrorPackets(void * base);
+void enableErrorPackets(void* base);
+void disableErrorPackets(void* base);
 
-void enableNonIsoMode(void * base);
-void disableNonIsoMode(void * base);
+void enableNonIsoMode(void* base);
+void disableNonIsoMode(void* base);
 
-void enableSlaveMode(void * base);
-void disableSlaveMode(void * base);
-unsigned int getSlaveMode(void * base);
+void enableSlaveMode(void* base);
+void disableSlaveMode(void* base);
+unsigned int getSlaveMode(void* base);
 
-void enableErrorPassiveMode(void * base);
-void disableErrorPassiveMode(void * base);
-unsigned int getErrorPassiveMode(void * base);
+void enableErrorPassiveMode(void* base);
+void disableErrorPassiveMode(void* base);
+unsigned int getErrorPassiveMode(void* base);
 
-void enableClassicCanMode(void * base);
-void disableClassicCanMode(void * base);
-unsigned int getClassicCanMode(void * base);
+void enableClassicCanMode(void* base);
+void disableClassicCanMode(void* base);
+unsigned int getClassicCanMode(void* base);
 
 void speedUp(int canid, int value);
 void speedNominal(int canid);
 
-void fpgaStatusRequest(void * base, int seq_no);
-void fpgaFlushTransmit(void * base);
-void fpgaFlushAll(void * base, int seq_no);
-void resetErrorCount(void * base);
+void fpgaStatusRequest(void* base, int seq_no);
+void fpgaFlushTransmit(void* base);
+void fpgaFlushAll(void* base, int seq_no);
+void resetErrorCount(void* base);
 
-int writeFIFO(VCanChanData *vChd, pciefd_packet_t *packet);
+int writeFIFO(VCanChanData* vChd, pciefd_packet_t* packet);
 
-void setLedStatus(void * base, int on);
-void ledOn(void * base);
-void ledOff(void * base);
+void setLedStatus(void* base, int on);
+void ledOn(void* base);
+void ledOff(void* base);
 
 #endif

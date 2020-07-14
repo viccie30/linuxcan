@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -72,101 +74,101 @@
 #include <errno.h>
 #include <unistd.h>
 
-
 static void check(char* id, canStatus stat)
 {
-  if (stat != canOK) {
-    char buf[50];
-    buf[0] = '\0';
-    canGetErrorText(stat, buf, sizeof(buf));
-    printf("%s: failed, stat=%d (%s)\n", id, (int)stat, buf);
-  }
+	if (stat != canOK) {
+		char buf[50];
+		buf[0] = '\0';
+		canGetErrorText(stat, buf, sizeof(buf));
+		printf("%s: failed, stat=%d (%s)\n", id, (int) stat, buf);
+	}
 }
 
-static void printUsageAndExit(char *prgName)
+static void printUsageAndExit(char* prgName)
 {
-  printf("Usage: '%s <channel>'\n", prgName);
-  exit(1);
+	printf("Usage: '%s <channel>'\n", prgName);
+	exit(1);
 }
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-  canHandle hnd;
-  canStatus stat;
-  int channel;
+	canHandle hnd;
+	canStatus stat;
+	int channel;
 
-  if (argc != 2) {
-    printUsageAndExit(argv[0]);
-  }
+	if (argc != 2) {
+		printUsageAndExit(argv[0]);
+	}
 
-  {
-    char *endPtr = NULL;
-    errno = 0;
-    channel = strtol(argv[1], &endPtr, 10);
-    if ( (errno != 0) || ((channel == 0) && (endPtr == argv[1])) ) {
-      printUsageAndExit(argv[0]);
-    }
-  }
+	{
+		char* endPtr = NULL;
+		errno = 0;
+		channel = strtol(argv[1], &endPtr, 10);
+		if ((errno != 0) || ((channel == 0) && (endPtr == argv[1]))) {
+			printUsageAndExit(argv[0]);
+		}
+	}
 
-  printf("Sending a CAN FD message on channel %d\n", channel);
+	printf("Sending a CAN FD message on channel %d\n", channel);
 
-  /* Allow signals to interrupt syscalls */
-  siginterrupt(SIGINT, 1);
+	/* Allow signals to interrupt syscalls */
+	siginterrupt(SIGINT, 1);
 
-  canInitializeLibrary();
+	canInitializeLibrary();
 
-  /* Open channel, set parameters and go on bus */
-  hnd = canOpenChannel(channel, canOPEN_CAN_FD | canOPEN_EXCLUSIVE | canOPEN_REQUIRE_EXTENDED);
-  if (hnd < 0) {
-    printf("canOpenChannel %d", channel);
-    check("", hnd);
-    return -1;
-  }
+	/* Open channel, set parameters and go on bus */
+	hnd = canOpenChannel(channel, canOPEN_CAN_FD | canOPEN_EXCLUSIVE |
+	                                      canOPEN_REQUIRE_EXTENDED);
+	if (hnd < 0) {
+		printf("canOpenChannel %d", channel);
+		check("", hnd);
+		return -1;
+	}
 
-  stat = canSetBusParams(hnd, canFD_BITRATE_1M_80P, 0, 0, 0, 0, 0);
-  check("canSetBusParams", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
-  stat = canSetBusParamsFd(hnd, canFD_BITRATE_2M_80P, 0, 0, 0);
-  check("canSetBusParamsFd", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
-  stat = canBusOn(hnd);
-  check("canBusOn", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
+	stat = canSetBusParams(hnd, canFD_BITRATE_1M_80P, 0, 0, 0, 0, 0);
+	check("canSetBusParams", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
+	stat = canSetBusParamsFd(hnd, canFD_BITRATE_2M_80P, 0, 0, 0);
+	check("canSetBusParamsFd", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
+	stat = canBusOn(hnd);
+	check("canBusOn", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
 
-  stat = canWrite(hnd, 10000,
-                  "Kvaser !"
-                  "01234567"
-                  "89ABCDEF"
-                  "abcdefgh"
-                  "ijklmnop"
-                  "qrstuvwx"
-                  "yz@#$-+*"
-                  "01234567",
-                  64, canMSG_EXT | canFDMSG_FDF | canFDMSG_BRS);
-  check("canWrite", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
-  stat = canWriteSync(hnd, 1000);
-  check("canWriteSync", stat);
-  if (stat != canOK) {
-    goto ErrorExit;
-  }
+	stat = canWrite(hnd, 10000,
+	                "Kvaser !"
+	                "01234567"
+	                "89ABCDEF"
+	                "abcdefgh"
+	                "ijklmnop"
+	                "qrstuvwx"
+	                "yz@#$-+*"
+	                "01234567",
+	                64, canMSG_EXT | canFDMSG_FDF | canFDMSG_BRS);
+	check("canWrite", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
+	stat = canWriteSync(hnd, 1000);
+	check("canWriteSync", stat);
+	if (stat != canOK) {
+		goto ErrorExit;
+	}
 
 ErrorExit:
 
-  stat = canBusOff(hnd);
-  check("canBusOff", stat);
-  stat = canClose(hnd);
-  check("canClose", stat);
-  stat = canUnloadLibrary();
-  check("canUnloadLibrary", stat);
+	stat = canBusOff(hnd);
+	check("canBusOff", stat);
+	stat = canClose(hnd);
+	check("canClose", stat);
+	stat = canUnloadLibrary();
+	check("canUnloadLibrary", stat);
 
-  return 0;
+	return 0;
 }

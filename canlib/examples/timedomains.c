@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -73,116 +75,116 @@
 
 static void check(char* id, canStatus stat)
 {
-  if (stat != canOK) {
-    char buf[50];
-    buf[0] = '\0';
-    canGetErrorText(stat, buf, sizeof(buf));
-    printf("%s: failed, stat=%d (%s)\n", id, (int)stat, buf);
-  }
+	if (stat != canOK) {
+		char buf[50];
+		buf[0] = '\0';
+		canGetErrorText(stat, buf, sizeof(buf));
+		printf("%s: failed, stat=%d (%s)\n", id, (int) stat, buf);
+	}
 }
 
-static void printUsageAndExit(char *prgName)
+static void printUsageAndExit(char* prgName)
 {
-  printf("Usage: '%s <channel> <channel> [<channel> ...]'\n", prgName);
-  exit(1);
+	printf("Usage: '%s <channel> <channel> [<channel> ...]'\n", prgName);
+	exit(1);
 }
 
-int main (int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-  int h[NUMBER_OF_CHANNELS];
-  canStatus stat;
-  int i, n;
-  kvTimeDomain tDomain;
-  kvTimeDomainData tData;
-  n = argc - 1;
+	int h[NUMBER_OF_CHANNELS];
+	canStatus stat;
+	int i, n;
+	kvTimeDomain tDomain;
+	kvTimeDomainData tData;
+	n = argc - 1;
 
-  if (n < 2) {
-    printf("Error: At least two channels required.\n");
-    printUsageAndExit(argv[0]);
-  }
+	if (n < 2) {
+		printf("Error: At least two channels required.\n");
+		printUsageAndExit(argv[0]);
+	}
 
-  if (n > NUMBER_OF_CHANNELS) {
-    printf("Error: Too many channels. Got %d, expected no more than %d. "
-        "Increase NUMBER_OF_CHANNELS and rebuild this example.\n",
-        n, NUMBER_OF_CHANNELS);
-    printUsageAndExit(argv[0]);
-  }
+	if (n > NUMBER_OF_CHANNELS) {
+		printf("Error: Too many channels. Got %d, expected no more than %d. "
+		       "Increase NUMBER_OF_CHANNELS and rebuild this example.\n",
+		       n, NUMBER_OF_CHANNELS);
+		printUsageAndExit(argv[0]);
+	}
 
-  canInitializeLibrary();
+	canInitializeLibrary();
 
-  // Create a time domain for my handles.
-  stat = kvTimeDomainCreate(&tDomain);
-  if (stat != canOK) {
-    check("kvTimeDomainCreate", stat);
-    return 1;
-  }
+	// Create a time domain for my handles.
+	stat = kvTimeDomainCreate(&tDomain);
+	if (stat != canOK) {
+		check("kvTimeDomainCreate", stat);
+		return 1;
+	}
 
-  for (i = 0; i < n; i++) {
-    int ch;
-    ch = atoi(argv[i+1]);
-    h[i] = canOpenChannel(ch, 0);
-    if (h[i] < 0) {
-      printf("canOpenChannel %d failed\n", ch);
-      check("", h[i]);
-      return 1;
-    }
-  }
+	for (i = 0; i < n; i++) {
+		int ch;
+		ch = atoi(argv[i + 1]);
+		h[i] = canOpenChannel(ch, 0);
+		if (h[i] < 0) {
+			printf("canOpenChannel %d failed\n", ch);
+			check("", h[i]);
+			return 1;
+		}
+	}
 
-  // Add the handles to the domain.
-  for (i = 0; i < n; i++) {
-    stat = kvTimeDomainAddHandle(tDomain, h[i]);
-    if (stat != canOK) {
-      printf("Failed to add handle %d to tDomain, ", i);
-      check("kvTimeDomainAddHandle", stat);
-      return 1;
-    }
-  }
+	// Add the handles to the domain.
+	for (i = 0; i < n; i++) {
+		stat = kvTimeDomainAddHandle(tDomain, h[i]);
+		if (stat != canOK) {
+			printf("Failed to add handle %d to tDomain, ", i);
+			check("kvTimeDomainAddHandle", stat);
+			return 1;
+		}
+	}
 
-  // Request some data from the domain and try to interpret it.
-  stat = kvTimeDomainGetData(tDomain, &tData, sizeof(tData));
-  if (stat != canOK) {
-    check("kvTimeDomainGetData", stat);
-    return 1;
-  }
+	// Request some data from the domain and try to interpret it.
+	stat = kvTimeDomainGetData(tDomain, &tData, sizeof(tData));
+	if (stat != canOK) {
+		check("kvTimeDomainGetData", stat);
+		return 1;
+	}
 
-  if (tData.nMagiSyncGroups > 1) {
-    printf("Consider connecting the Kvaser MagiSync enabled ");
-    printf("interfaces through the same USB root hub!\n\n");
-  }
+	if (tData.nMagiSyncGroups > 1) {
+		printf("Consider connecting the Kvaser MagiSync enabled ");
+		printf("interfaces through the same USB root hub!\n\n");
+	}
 
-  if (tData.nMagiSyncGroups == 1) {
-    printf("All Kvaser MagiSync enabled interfaces are ");
-    printf("connected through the same USB root hub and ");
-    printf("will therefore be synchronized.\n\n");
-  }
+	if (tData.nMagiSyncGroups == 1) {
+		printf("All Kvaser MagiSync enabled interfaces are ");
+		printf("connected through the same USB root hub and ");
+		printf("will therefore be synchronized.\n\n");
+	}
 
-  if (tData.nMagiSyncedMembers == n) {
-    printf("All handles have the Kvaser MagiSync feature enabled!\n\n");
-  }
+	if (tData.nMagiSyncedMembers == n) {
+		printf("All handles have the Kvaser MagiSync feature enabled!\n\n");
+	}
 
-  // Reset the time on all handles in tDomain.
-  stat = kvTimeDomainResetTime(tDomain);
-  if (stat != canOK) {
-    check("kvTimeDomainResetTime", stat);
-    return 1;
-  }
+	// Reset the time on all handles in tDomain.
+	stat = kvTimeDomainResetTime(tDomain);
+	if (stat != canOK) {
+		check("kvTimeDomainResetTime", stat);
+		return 1;
+	}
 
-  // Final cleanup
-  stat = kvTimeDomainDelete(tDomain);
-  if (stat != canOK) {
-    check("kvTimeDomainDelete", stat);
-    return 1;
-  }
-  else {
-    printf("All resources used by tDomain and its members ");
-    printf("returned to system\n");
-  }
+	// Final cleanup
+	stat = kvTimeDomainDelete(tDomain);
+	if (stat != canOK) {
+		check("kvTimeDomainDelete", stat);
+		return 1;
+	}
+	else {
+		printf("All resources used by tDomain and its members ");
+		printf("returned to system\n");
+	}
 
-  stat = canUnloadLibrary();
-  if (stat != canOK) {
-    check("canUnloadLibrary", stat);
-    return 1;
-  }
+	stat = canUnloadLibrary();
+	if (stat != canOK) {
+		check("canUnloadLibrary", stat);
+		return 1;
+	}
 
-  return 0;
+	return 0;
 }

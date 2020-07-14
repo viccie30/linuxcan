@@ -36,97 +36,88 @@
  * and sleeping threads but this is probably not worthwhile initially.
  */
 
-int alt_avalon_spi_command(volatile void * base, uint32_t slave,
-                           uint32_t write_length, const uint8_t * write_data,
-                           uint32_t read_length, uint8_t * read_data,
+int alt_avalon_spi_command(volatile void* base, uint32_t slave,
+                           uint32_t write_length, const uint8_t* write_data,
+                           uint32_t read_length, uint8_t* read_data,
                            uint32_t flags)
 {
-  const uint8_t * write_end = write_data + write_length;
-  uint8_t * read_end = read_data + read_length;
+	const uint8_t* write_end = write_data + write_length;
+	uint8_t* read_end = read_data + read_length;
 
-  uint32_t write_zeros = read_length;
-  uint32_t read_ignore = write_length;
-  uint32_t status;
+	uint32_t write_zeros = read_length;
+	uint32_t read_ignore = write_length;
+	uint32_t status;
 
-  /* We must not send more than two bytes to the target before it has
-   * returned any as otherwise it will overflow. */
-  /* Unfortunately the hardware does not seem to work with credits > 1,
-   * leave it at 1 for now. */
-  uint32_t credits = 1;
+	/* We must not send more than two bytes to the target before it has
+	 * returned any as otherwise it will overflow. */
+	/* Unfortunately the hardware does not seem to work with credits > 1,
+	 * leave it at 1 for now. */
+	uint32_t credits = 1;
 
-  /* Warning: this function is not currently safe if called in a multi-threaded
-   * environment, something above must perform locking to make it safe if more
-   * than one thread intends to use it.
-   */
+	/* Warning: this function is not currently safe if called in a
+	 * multi-threaded environment, something above must perform locking to make
+	 * it safe if more than one thread intends to use it.
+	 */
 
-  IOWR_ALTERA_AVALON_SPI_SLAVE_SEL(base, 1 << slave);
-  
-  /* Set the SSO bit (force chipselect) only if the toggle flag is not set */
-  if ((flags & ALT_AVALON_SPI_COMMAND_TOGGLE_SS_N) == 0) {
-    IOWR_ALTERA_AVALON_SPI_CONTROL(base, ALTERA_AVALON_SPI_CONTROL_SSO_MSK);
-  }
+	IOWR_ALTERA_AVALON_SPI_SLAVE_SEL(base, 1 << slave);
 
-  /*
-   * Discard any stale data present in the RXDATA register, in case
-   * previous communication was interrupted and stale data was left
-   * behind.
-   */
-  IORD_ALTERA_AVALON_SPI_RXDATA(base);
-    
-  /* Keep clocking until all the data has been processed. */
-  for ( ; ; )
-    {
-    
-      do
-        {
-          status = IORD_ALTERA_AVALON_SPI_STATUS(base);
-        }
-      while (((status & ALTERA_AVALON_SPI_STATUS_TRDY_MSK) == 0 || credits == 0) &&
-             (status & ALTERA_AVALON_SPI_STATUS_RRDY_MSK) == 0);
+	/* Set the SSO bit (force chipselect) only if the toggle flag is not set */
+	if ((flags & ALT_AVALON_SPI_COMMAND_TOGGLE_SS_N) == 0) {
+		IOWR_ALTERA_AVALON_SPI_CONTROL(base, ALTERA_AVALON_SPI_CONTROL_SSO_MSK);
+	}
 
-      if ((status & ALTERA_AVALON_SPI_STATUS_TRDY_MSK) != 0 && credits > 0)
-        {
-          credits--;
+	/*
+	 * Discard any stale data present in the RXDATA register, in case
+	 * previous communication was interrupted and stale data was left
+	 * behind.
+	 */
+	IORD_ALTERA_AVALON_SPI_RXDATA(base);
 
-          if (write_data < write_end)
-            IOWR_ALTERA_AVALON_SPI_TXDATA(base, *write_data++);
-          else if (write_zeros > 0)
-            {
-              write_zeros--;
-              IOWR_ALTERA_AVALON_SPI_TXDATA(base, 0);
-            }
-          else
-            credits = -1024;
-        };
+	/* Keep clocking until all the data has been processed. */
+	for (;;) {
+		do {
+			status = IORD_ALTERA_AVALON_SPI_STATUS(base);
+		} while (((status & ALTERA_AVALON_SPI_STATUS_TRDY_MSK) == 0 ||
+		          credits == 0) &&
+		         (status & ALTERA_AVALON_SPI_STATUS_RRDY_MSK) == 0);
 
-      if ((status & ALTERA_AVALON_SPI_STATUS_RRDY_MSK) != 0)
-        {
-          uint32_t rxdata = IORD_ALTERA_AVALON_SPI_RXDATA(base);
+		if ((status & ALTERA_AVALON_SPI_STATUS_TRDY_MSK) != 0 && credits > 0) {
+			credits--;
 
-          if (read_ignore > 0)
-            read_ignore--;
-          else
-            *read_data++ = (uint8_t)rxdata;
-          credits++;
+			if (write_data < write_end)
+				IOWR_ALTERA_AVALON_SPI_TXDATA(base, *write_data++);
+			else if (write_zeros > 0) {
+				write_zeros--;
+				IOWR_ALTERA_AVALON_SPI_TXDATA(base, 0);
+			}
+			else
+				credits = -1024;
+		};
 
-          if (read_ignore == 0 && read_data == read_end)
-            break;
-        }
-    
-    }
+		if ((status & ALTERA_AVALON_SPI_STATUS_RRDY_MSK) != 0) {
+			uint32_t rxdata = IORD_ALTERA_AVALON_SPI_RXDATA(base);
 
-  /* Wait until the interface has finished transmitting */
-  do
-    {
-      status = IORD_ALTERA_AVALON_SPI_STATUS(base);
-    }
-  while ((status & ALTERA_AVALON_SPI_STATUS_TMT_MSK) == 0);
+			if (read_ignore > 0)
+				read_ignore--;
+			else
+				*read_data++ = (uint8_t) rxdata;
+			credits++;
 
-  /* Clear SSO (release chipselect) unless the caller is going to
-   * keep using this chip
-   */
-  if ((flags & ALT_AVALON_SPI_COMMAND_MERGE) == 0)
-    IOWR_ALTERA_AVALON_SPI_CONTROL(base, 0);
+			if (read_ignore == 0 && read_data == read_end)
+				break;
+		}
+	}
 
-  return read_length;
+	/* Wait until the interface has finished transmitting */
+	do {
+		status = IORD_ALTERA_AVALON_SPI_STATUS(base);
+	} while ((status & ALTERA_AVALON_SPI_STATUS_TMT_MSK) == 0);
+
+	/* Clear SSO (release chipselect) unless the caller is going to
+	 * keep using this chip
+	 */
+	if ((flags & ALT_AVALON_SPI_COMMAND_MERGE) == 0)
+		IOWR_ALTERA_AVALON_SPI_CONTROL(base, 0);
+
+	return read_length;
 }

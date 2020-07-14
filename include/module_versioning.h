@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -64,7 +66,6 @@
 #ifndef _MODULE_VERSIONING_H_
 #define _MODULE_VERSIONING_H_
 
-
 // Module versioning
 #define EXPORT_SYMTAB
 
@@ -73,22 +74,20 @@
 // Check that CONFIG_* macros are included
 #if !defined(AUTOCONF_INCLUDED)
 //#error linux/autoconf.h not included!
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 33)
-#include <linux/autoconf.h>
-#else
-#include <generated/autoconf.h>
-#endif
+#	if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 33)
+#		include <linux/autoconf.h>
+#	else
+#		include <generated/autoconf.h>
+#	endif
 #endif
 
 #if defined(CONFIG_MODVERSIONS) && !defined(MODVERSIONS)
-#   define MODVERSIONS
+#	define MODVERSIONS
 #endif
 
 #ifdef MODVERSIONS
-#include <config/modversions.h>
+#	include <config/modversions.h>
 #endif
 #include <linux/module.h>
 
-
 #endif //_MODULE_VERSIONING_H_
-

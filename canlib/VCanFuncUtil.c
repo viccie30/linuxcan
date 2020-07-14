@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -67,34 +69,34 @@
 
 #include "VCanFuncUtil.h"
 
-canStatus errnoToCanStatus (int error)
+canStatus errnoToCanStatus(int error)
 {
-  switch (error) {
-  case 0:
-    return canOK;
-  case EINVAL:
-    return canERR_PARAM;
-  case ENOMEM:
-    return canERR_NOMEM;
-  case EAGAIN:
-    return canERR_NOMSG;      // Sometimes overridden
-  case EIO:
-    return canERR_NOTFOUND;   // Not so good
-  case ENODEV:
-    return canERR_NOTFOUND;
-  case EINTR:
-    return canERR_INTERRUPTED;
-  case EBADMSG:
-    return canERR_PARAM;      // Used?
-  case EACCES:
-    return canERR_NO_ACCESS;
-  case ETIMEDOUT:
-    return canERR_TIMEOUT;
-  case ENOSYS:                // Function not implemented
-    return canERR_NOT_IMPLEMENTED;
-  case ESHUTDOWN:
-    return canERR_HARDWARE;
-  default:
-    return canERR_INTERNAL;   // Not so good
-  }
+	switch (error) {
+	case 0:
+		return canOK;
+	case EINVAL:
+		return canERR_PARAM;
+	case ENOMEM:
+		return canERR_NOMEM;
+	case EAGAIN:
+		return canERR_NOMSG; // Sometimes overridden
+	case EIO:
+		return canERR_NOTFOUND; // Not so good
+	case ENODEV:
+		return canERR_NOTFOUND;
+	case EINTR:
+		return canERR_INTERRUPTED;
+	case EBADMSG:
+		return canERR_PARAM; // Used?
+	case EACCES:
+		return canERR_NO_ACCESS;
+	case ETIMEDOUT:
+		return canERR_TIMEOUT;
+	case ENOSYS: // Function not implemented
+		return canERR_NOT_IMPLEMENTED;
+	case ESHUTDOWN:
+		return canERR_HARDWARE;
+	default:
+		return canERR_INTERNAL; // Not so good
+	}
 }

@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -73,131 +75,128 @@
 
 static void check(char* id, canStatus stat)
 {
-  if (stat != canOK) {
-    char buf[50];
-    buf[0] = '\0';
-    canGetErrorText(stat, buf, sizeof(buf));
-    printf("%s: failed, stat=%d (%s)\n", id, (int)stat, buf);
-  }
+	if (stat != canOK) {
+		char buf[50];
+		buf[0] = '\0';
+		canGetErrorText(stat, buf, sizeof(buf));
+		printf("%s: failed, stat=%d (%s)\n", id, (int) stat, buf);
+	}
 }
 
 int main(int argc, char* argv[])
 {
-  canStatus stat;
-  int i;
-  int beta;
-  char betaString[10];
-  char name[256];
-  char driverName[256];
-  char custChanName[40];
-  unsigned int ean[2], fw[2], serial[2];
-  unsigned int canlibVersion;
-  uint16_t fileVersion[4];
+	canStatus stat;
+	int i;
+	int beta;
+	char betaString[10];
+	char name[256];
+	char driverName[256];
+	char custChanName[40];
+	unsigned int ean[2], fw[2], serial[2];
+	unsigned int canlibVersion;
+	uint16_t fileVersion[4];
 
-  ccl_class channel_list;
+	ccl_class channel_list;
 
-  (void)argc; // Unused.
-  (void)argv; // Unused.
+	(void) argc; // Unused.
+	(void) argv; // Unused.
 
-  canInitializeLibrary();
+	canInitializeLibrary();
 
-  beta = canGetVersionEx(canVERSION_CANLIB32_BETA);
-  if (beta) {
-    sprintf(betaString, "BETA");
-  } else {
-    betaString[0] = '\0';
-  }
-  canlibVersion = canGetVersionEx(canVERSION_CANLIB32_PRODVER);
-  printf("CANlib version %d.%d %s\n",
-         canlibVersion >> 8,
-         canlibVersion & 0xff,
-         betaString);
+	beta = canGetVersionEx(canVERSION_CANLIB32_BETA);
+	if (beta) {
+		sprintf(betaString, "BETA");
+	}
+	else {
+		betaString[0] = '\0';
+	}
+	canlibVersion = canGetVersionEx(canVERSION_CANLIB32_PRODVER);
+	printf("CANlib version %d.%d %s\n", canlibVersion >> 8,
+	       canlibVersion & 0xff, betaString);
 
-  memset(name, 0, sizeof(name));
-  memset(custChanName, 0, sizeof(custChanName));
-  memset(ean, 0, sizeof(ean));
-  memset(fw, 0, sizeof(fw));
-  memset(serial, 0, sizeof(serial));
+	memset(name, 0, sizeof(name));
+	memset(custChanName, 0, sizeof(custChanName));
+	memset(ean, 0, sizeof(ean));
+	memset(fw, 0, sizeof(fw));
+	memset(serial, 0, sizeof(serial));
 
-  stat = ccl_get_channel_list(&channel_list);
+	stat = ccl_get_channel_list(&channel_list);
 
-  if (stat != canOK) {
-    check("canGetNumberOfChannels", stat);
-    exit(1);
-  }
+	if (stat != canOK) {
+		check("canGetNumberOfChannels", stat);
+		exit(1);
+	}
 
-  printf("Found %u channel(s).\n", channel_list.n_channel);
+	printf("Found %u channel(s).\n", channel_list.n_channel);
 
-  for (i = 0; i < (int)channel_list.n_channel; i++) {
+	for (i = 0; i < (int) channel_list.n_channel; i++) {
+		stat = canGetChannelData(i, canCHANNELDATA_DRIVER_NAME, &driverName,
+		                         sizeof(driverName));
+		if (stat != canOK) {
+			check("canGetChannelData: DRIVER_NAME", stat);
+			exit(1);
+		}
 
-    stat = canGetChannelData(i, canCHANNELDATA_DRIVER_NAME,
-                             &driverName, sizeof(driverName));
-    if (stat != canOK) {
-      check("canGetChannelData: DRIVER_NAME", stat);
-      exit(1);
-    }
+		stat = canGetChannelData(i, canCHANNELDATA_DLL_FILE_VERSION,
+		                         &fileVersion, sizeof(fileVersion));
+		if (stat != canOK) {
+			check("canGetChannelData: DLL_FILE_VERSION", stat);
+			exit(1);
+		}
+		stat = canGetChannelData(i, canCHANNELDATA_DEVDESCR_ASCII, &name,
+		                         sizeof(name));
+		if (stat != canOK) {
+			check("canGetChannelData: DEVDESCR_ASCII", stat);
+			exit(1);
+		}
 
-    stat = canGetChannelData(i, canCHANNELDATA_DLL_FILE_VERSION,
-                             &fileVersion, sizeof(fileVersion));
-    if (stat != canOK) {
-      check("canGetChannelData: DLL_FILE_VERSION", stat);
-      exit(1);
-    }
-    stat = canGetChannelData(i, canCHANNELDATA_DEVDESCR_ASCII,
-                             &name, sizeof(name));
-    if (stat != canOK) {
-      check("canGetChannelData: DEVDESCR_ASCII", stat);
-      exit(1);
-    }
+		if (strcmp(name, "Kvaser Unknown") == 0) {
+			stat = canGetChannelData(i, canCHANNELDATA_CHANNEL_NAME, &name,
+			                         sizeof(name));
+			if (stat != canOK) {
+				check("canGetChannelData: CHANNEL_NAME", stat);
+				exit(1);
+			}
+		}
 
-    if (strcmp(name, "Kvaser Unknown") == 0) {
-      stat = canGetChannelData(i, canCHANNELDATA_CHANNEL_NAME,
-                               &name, sizeof(name));
-      if (stat != canOK) {
-        check("canGetChannelData: CHANNEL_NAME", stat);
-        exit(1);
-      }
-    }
+		stat = canGetChannelData(i, canCHANNELDATA_CARD_UPC_NO, &ean,
+		                         sizeof(ean));
+		if (stat != canOK) {
+			check("canGetChannelData: CARD_UPC_NO", stat);
+			exit(1);
+		}
 
-    stat = canGetChannelData(i, canCHANNELDATA_CARD_UPC_NO,
-                             &ean, sizeof(ean));
-    if (stat != canOK) {
-      check("canGetChannelData: CARD_UPC_NO", stat);
-      exit(1);
-    }
+		stat = canGetChannelData(i, canCHANNELDATA_CARD_SERIAL_NO, &serial,
+		                         sizeof(serial));
+		if (stat != canOK) {
+			check("canGetChannelData: CARD_SERIAL_NO", stat);
+			exit(1);
+		}
 
-    stat = canGetChannelData(i, canCHANNELDATA_CARD_SERIAL_NO,
-                             &serial, sizeof(serial));
-    if (stat != canOK) {
-      check("canGetChannelData: CARD_SERIAL_NO", stat);
-      exit(1);
-    }
+		stat = canGetChannelData(i, canCHANNELDATA_CARD_FIRMWARE_REV, &fw,
+		                         sizeof(fw));
+		if (stat != canOK) {
+			check("canGetChannelData: CARD_FIRMWARE_REV", stat);
+			exit(1);
+		}
 
-    stat = canGetChannelData(i, canCHANNELDATA_CARD_FIRMWARE_REV,
-                             &fw, sizeof(fw));
-    if (stat != canOK) {
-      check("canGetChannelData: CARD_FIRMWARE_REV", stat);
-      exit(1);
-    }
+		(void) canGetChannelData(i, canCHANNELDATA_CUST_CHANNEL_NAME,
+		                         custChanName, sizeof(custChanName));
 
-    (void) canGetChannelData(i, canCHANNELDATA_CUST_CHANNEL_NAME,
-                             custChanName, sizeof(custChanName));
+		printf("ch %2.1d: %-35s\t%x-%05x-%05x-%x, s/n %u, v%u.%u.%u %s (%s "
+		       "v%d.%d.%d)\n",
+		       i, name, (ean[1] >> 12),
+		       ((ean[1] & 0xfff) << 8) | ((ean[0] >> 24) & 0xff),
+		       (ean[0] >> 4) & 0xfffff, (ean[0] & 0x0f), serial[0], fw[1] >> 16,
+		       fw[1] & 0xffff, fw[0] & 0xffff, custChanName, driverName,
+		       fileVersion[3], fileVersion[2], fileVersion[1]);
+	}
 
-    printf("ch %2.1d: %-35s\t%x-%05x-%05x-%x, s/n %u, v%u.%u.%u %s (%s v%d.%d.%d)\n",
-           i, name,
-           (ean[1] >> 12), ((ean[1] & 0xfff) << 8) | ((ean[0] >> 24) & 0xff),
-           (ean[0] >> 4) & 0xfffff, (ean[0] & 0x0f),
-           serial[0],
-           fw[1] >> 16, fw[1] & 0xffff, fw[0] & 0xffff,
-           custChanName,
-           driverName, fileVersion[3], fileVersion[2], fileVersion[1]);
-  }
+	stat = canUnloadLibrary();
+	if (stat != canOK) {
+		check("canUnloadLibrary", stat);
+		exit(1);
+	}
 
-  stat = canUnloadLibrary();
-  if (stat != canOK) {
-    check("canUnloadLibrary", stat);
-    exit(1);
-  }
-
-  return 0;
+	return 0;
 }

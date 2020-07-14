@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -66,17 +68,14 @@
 
 /*  Kvaser Linux Canlib VCan layer functions used in Memorators */
 
-
 #include "canstat.h"
 #include "canlib_data.h"
 
-canStatus vCanMemo_file_copy_to_device(HandleData *hData,
-                                       char *hostFileName,
-                                       char *deviceFileName);
-canStatus vCanMemo_file_copy_from_device(HandleData *hData,
-                                         char *deviceFileName,
-                                         char *hostFileName);
-canStatus vCanMemo_file_delete(HandleData *hData, char *deviceFileName);
+canStatus vCanMemo_file_copy_to_device(HandleData* hData, char* hostFileName,
+                                       char* deviceFileName);
+canStatus vCanMemo_file_copy_from_device(HandleData* hData,
+                                         char* deviceFileName,
+                                         char* hostFileName);
+canStatus vCanMemo_file_delete(HandleData* hData, char* deviceFileName);
 
-
-#endif  /* VCANMEMOFUNCTIONS_H */
+#endif /* VCANMEMOFUNCTIONS_H */

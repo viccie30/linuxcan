@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -71,22 +73,22 @@
 #define LIO_ERROR_H
 
 typedef enum {
-  lio_OK = 0,
-  lio_queueFull = 1,
-  lio_CRCError = 2,
-  lio_SectorErased = 3,
-  lio_FileError = 4,
-  lio_DiskError = 5,
-  lio_DiskFull_Dir = 6,
-  lio_DiskFull_Data = 7,
-  lio_EOF = 8,
-  lio_SeqError = 9,
-  lio_Error = 10,
-  lio_FileSystemCorrupt = 11,
-  lio_UnsupportedVersion = 12,
-  lio_NotImplemented = 13,
-  lio_FatalError = 14,
-  lio_State = 15
+	lio_OK = 0,
+	lio_queueFull = 1,
+	lio_CRCError = 2,
+	lio_SectorErased = 3,
+	lio_FileError = 4,
+	lio_DiskError = 5,
+	lio_DiskFull_Dir = 6,
+	lio_DiskFull_Data = 7,
+	lio_EOF = 8,
+	lio_SeqError = 9,
+	lio_Error = 10,
+	lio_FileSystemCorrupt = 11,
+	lio_UnsupportedVersion = 12,
+	lio_NotImplemented = 13,
+	lio_FatalError = 14,
+	lio_State = 15
 } LioResult;
 
 #endif // LIO_ERROR_H

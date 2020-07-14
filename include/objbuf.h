@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -69,30 +71,30 @@
 #define MAX_OBJECT_BUFFERS 8
 
 // Object buffer types.
-#define OBJBUF_TYPE_AUTO_RESPONSE       1
-#define OBJBUF_TYPE_PERIODIC_TX         2
+#define OBJBUF_TYPE_AUTO_RESPONSE 1
+#define OBJBUF_TYPE_PERIODIC_TX 2
 
-#define OBJBUF_AUTO_RESPONSE_RTR_ONLY   0x01    // Flag: respond to RTR's only
+#define OBJBUF_AUTO_RESPONSE_RTR_ONLY 0x01 // Flag: respond to RTR's only
 
-#define OBJBUF_DRIVER_MARKER 0x40000000  // To make handles different
-#define OBJBUF_DRIVER_MASK   0x1f        // Support up to 32 object buffers
+#define OBJBUF_DRIVER_MARKER 0x40000000 // To make handles different
+#define OBJBUF_DRIVER_MASK 0x1f         // Support up to 32 object buffers
 
 typedef struct {
-  unsigned int acc_code;    // For autoresponse bufs; filter code
-  unsigned int acc_mask;    // For autoresponse bufs; filter mask
-  unsigned int period;      // For auto tx buffers; interval in microseconds
-  CAN_MSG msg;
-  unsigned char in_use;
-  unsigned char active;
-  unsigned char type;
-  unsigned char flags;
+	unsigned int acc_code; // For autoresponse bufs; filter code
+	unsigned int acc_mask; // For autoresponse bufs; filter mask
+	unsigned int period;   // For auto tx buffers; interval in microseconds
+	CAN_MSG msg;
+	unsigned char in_use;
+	unsigned char active;
+	unsigned char type;
+	unsigned char flags;
 } OBJECT_BUFFER;
 
 struct VCanOpenFileNode;
 
-unsigned int objbuf_filter_match(OBJECT_BUFFER *buf, unsigned int id,
+unsigned int objbuf_filter_match(OBJECT_BUFFER* buf, unsigned int id,
                                  unsigned int flags);
-void objbuf_init(struct VCanOpenFileNode *fileNodePtr);
-void objbuf_shutdown(struct VCanOpenFileNode *fileNodePtr);
+void objbuf_init(struct VCanOpenFileNode* fileNodePtr);
+void objbuf_shutdown(struct VCanOpenFileNode* fileNodePtr);
 
 #endif

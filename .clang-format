@@ -1,0 +1,22 @@
+Language: Cpp
+Standard: Cpp11
+
+ColumnLimit: 80
+
+UseTab: ForIndentation
+IndentWidth: 4
+TabWidth: 4
+AccessModifierOffset: -4
+ConstructorInitializerIndentWidth: 8
+ContinuationIndentWidth: 8
+
+BreakBeforeBraces: Stroustrup
+AllowShortFunctionsOnASingleLine: Inline
+AlwaysBreakTemplateDeclarations: Yes
+IndentPPDirectives: AfterHash
+KeepEmptyLinesAtTheStartOfBlocks: false
+PointerAlignment: Left
+SpaceAfterCStyleCast: true
+SpaceBeforeCpp11BracedList: true
+
+SortIncludes: false

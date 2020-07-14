@@ -46,12 +46,14 @@
 **
 ** You should have received a copy of the GNU General Public License
 ** along with this program; if not, write to the Free Software
-** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+*USA
 **
 **
 ** IMPORTANT NOTICE:
 ** ==============================================================================
-** This source code is made available for free, as an open license, by Kvaser AB,
+** This source code is made available for free, as an open license, by Kvaser
+*AB,
 ** for use with its applications. Kvaser AB does not accept any liability
 ** whatsoever for any third party patent or other immaterial property rights
 ** violations that may result from any usage of this source code, regardless of
@@ -64,71 +66,87 @@
 #include "dlc.h"
 
 #ifdef __KERNEL__
-#include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 2, 0)
-#include <linux/module.h>
-#else
-#include <linux/export.h>
-#endif /* LINUX_VERSION_CODE */
-#endif /* __KERNEL */
+#	include <linux/version.h>
+#	if LINUX_VERSION_CODE < KERNEL_VERSION(3, 2, 0)
+#		include <linux/module.h>
+#	else
+#		include <linux/export.h>
+#	endif /* LINUX_VERSION_CODE */
+#endif     /* __KERNEL */
 
-uint32_t dlc_bytes_to_dlc_fd (uint32_t n_bytes)
+uint32_t dlc_bytes_to_dlc_fd(uint32_t n_bytes)
 {
-  if (n_bytes > 48) return 15;
-  else if (n_bytes > 32) return 14;
-  else if (n_bytes > 24) return 13;
-  else if (n_bytes > 20) return 12;
-  else if (n_bytes > 16) return 11;
-  else if (n_bytes > 12) return 10;
-  else if (n_bytes >  8) return 9;
-  else return n_bytes;
+	if (n_bytes > 48)
+		return 15;
+	else if (n_bytes > 32)
+		return 14;
+	else if (n_bytes > 24)
+		return 13;
+	else if (n_bytes > 20)
+		return 12;
+	else if (n_bytes > 16)
+		return 11;
+	else if (n_bytes > 12)
+		return 10;
+	else if (n_bytes > 8)
+		return 9;
+	else
+		return n_bytes;
 }
 #ifdef __KERNEL__
 EXPORT_SYMBOL(dlc_bytes_to_dlc_fd);
 #endif
 
-uint32_t dlc_dlc_to_bytes_fd (uint32_t dlc)
+uint32_t dlc_dlc_to_bytes_fd(uint32_t dlc)
 {
-  switch (dlc & 0x0000000FU) {
-    case 9:   return 12;
-    case 10:  return 16;
-    case 11:  return 20;
-    case 12:  return 24;
-    case 13:  return 32;
-    case 14:  return 48;
-    case 15:  return 64;
-    default:  return dlc;
-  }
+	switch (dlc & 0x0000000FU) {
+	case 9:
+		return 12;
+	case 10:
+		return 16;
+	case 11:
+		return 20;
+	case 12:
+		return 24;
+	case 13:
+		return 32;
+	case 14:
+		return 48;
+	case 15:
+		return 64;
+	default:
+		return dlc;
+	}
 }
 #ifdef __KERNEL__
 EXPORT_SYMBOL(dlc_dlc_to_bytes_fd);
 #endif
 
-uint32_t dlc_is_dlc_ok (uint32_t accept_large_dlc, uint32_t is_fd, uint32_t dlc)
+uint32_t dlc_is_dlc_ok(uint32_t accept_large_dlc, uint32_t is_fd, uint32_t dlc)
 {
-  if (is_fd)  {
-    return ((dlc <= 8)  ||
-            (dlc == 12) || (dlc == 16) ||
-            (dlc == 20) || (dlc == 24) ||
-            (dlc == 32) || (dlc == 48) ||
-            (dlc == 64));
-  } else if (accept_large_dlc) {
-    return 1;
-  } else {
-    return (dlc <= 8);
-  }
+	if (is_fd) {
+		return ((dlc <= 8) || (dlc == 12) || (dlc == 16) || (dlc == 20) ||
+		        (dlc == 24) || (dlc == 32) || (dlc == 48) || (dlc == 64));
+	}
+	else if (accept_large_dlc) {
+		return 1;
+	}
+	else {
+		return (dlc <= 8);
+	}
 }
 #ifdef __KERNEL__
 EXPORT_SYMBOL(dlc_is_dlc_ok);
 #endif
 
-uint32_t dlc_dlc_to_bytes_classic (uint32_t dlc)
+uint32_t dlc_dlc_to_bytes_classic(uint32_t dlc)
 {
-  if ((dlc & 0x0000000FU) > 8) {
-    return 8;
-  } else {
-    return dlc;
-  }
+	if ((dlc & 0x0000000FU) > 8) {
+		return 8;
+	}
+	else {
+		return dlc;
+	}
 }
 #ifdef __KERNEL__
 EXPORT_SYMBOL(dlc_dlc_to_bytes_classic);
