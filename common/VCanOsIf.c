@@ -960,10 +960,7 @@ int vCanClose(struct inode* inode, struct file* filp)
 		}
 	}
 
-	if (fileNodePtr != NULL) {
-		kfree(fileNodePtr);
-		fileNodePtr = NULL;
-	}
+	kfree(fileNodePtr);
 
 	atomic_dec(&chanData->fileOpenCount);
 

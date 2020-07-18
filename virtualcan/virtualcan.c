@@ -156,9 +156,6 @@ static unsigned long virtualTxQLen(VCanChanData* vChd);
 static void virtualRequestSend(VCanCardData* vCard, VCanChanData* vChan);
 
 static int virtualTransmitMessage(VCanChanData* vChd, CAN_MSG* m);
-static int virtual_special_ioctl_handler(VCanOpenFileNode* fileNodePtr,
-                                         unsigned int ioctl_cmd,
-                                         unsigned long arg);
 static int virtualGetTransceiverType(VCanChanData* vChd,
                                      unsigned int* transceiver_type);
 
@@ -182,7 +179,6 @@ static VCanHWInterface hwIf = {
         .txQLen = virtualTxQLen,
         .requestChipState = virtualRequestChipState,
         .requestSend = virtualRequestSend,
-        .special_ioctl_handler = virtual_special_ioctl_handler,
         .getCardInfo = vCanGetCardInfo,
         .getCardInfo2 = vCanGetCardInfo2,
         .get_transceiver_type = virtualGetTransceiverType,
@@ -190,14 +186,6 @@ static VCanHWInterface hwIf = {
 
 // prototype:
 static int virtualSend(void* void_chanData);
-
-static int virtual_special_ioctl_handler(VCanOpenFileNode* fileNodePtr,
-                                         unsigned int ioctl_cmd,
-                                         unsigned long arg)
-{
-	DEBUGPRINT(1, "virtual_special_ioctl_handler unk: %u\n", ioctl_cmd);
-	return VCAN_STAT_NOT_IMPLEMENTED;
-}
 
 //======================================================================
 // Wrapper for common function
