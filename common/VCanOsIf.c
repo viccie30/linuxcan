@@ -3426,10 +3426,9 @@ int vCanInit(VCanDriverData* driverData, unsigned max_channels)
 	return 0;
 
 device_create_err:
-	if (n > 0) {
-		while (--n >= 0) {
-			device_destroy(driverData->class, MKDEV(MAJOR(devno), n));
-		}
+	while (n > 0) {
+		device_destroy(driverData->class,
+		               MKDEV(MAJOR(driverData->cdev.dev), --n));
 	}
 	cdev_del(&driverData->cdev);
 cdev_add_err:
@@ -3460,12 +3459,12 @@ void vCanCleanup(VCanDriverData* driverData)
 		               driverData->deviceName, MAJOR(driverData->cdev.dev),
 		               driverData->cdev.count));
 		n = driverData->cdev.count;
-		if (n > 0) {
-			while (--n >= 0) {
-				device_destroy(driverData->class,
-				               MKDEV(MAJOR(driverData->cdev.dev), n));
-			}
+
+		while (n > 0) {
+			device_destroy(driverData->class,
+			               MKDEV(MAJOR(driverData->cdev.dev), --n));
 		}
+
 		cdev_del(&driverData->cdev);
 		class_destroy(driverData->class);
 		unregister_chrdev_region(driverData->cdev.dev, driverData->cdev.count);
