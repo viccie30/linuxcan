@@ -621,9 +621,10 @@ static int virtualInitData(VCanCardData* vCard)
 //======================================================================
 static int virtualInitOne(void)
 {
-	ChanHelperStruct* chs;
 	int chNr;
 	VCanCardData* vCard;
+	VCanChanData* vChd;
+	virtualChanData* hChd;
 
 	// Allocate data area for this card
 	vCard = kzalloc(sizeof(VCanCardData) + sizeof(virtualCardData), GFP_KERNEL);
@@ -635,34 +636,28 @@ static int virtualInitOne(void)
 	vCard->hwCardData = vCard + 1;
 
 	// Allocate memory for n channels
-	chs = kzalloc(sizeof(ChanHelperStruct), GFP_KERNEL);
-	if (!chs) {
-		goto chan_alloc_err;
-	}
-
-	chs->dataPtrArray =
+	vCard->chanData =
 	        kmalloc_array(nrChannels, sizeof(VCanChanData*), GFP_KERNEL);
-	if (!chs->dataPtrArray) {
-		goto dataPtrArray_alloc_err;
+	if (!vCard->chanData) {
+		goto vCard_chanData_alloc_err;
 	}
 
-	chs->vChd = kcalloc(nrChannels, sizeof(VCanChanData), GFP_KERNEL);
-	if (!chs->vChd) {
+	vChd = kcalloc(nrChannels, sizeof(VCanChanData), GFP_KERNEL);
+	if (!vChd) {
 		goto vChd_alloc_err;
 	}
 
-	chs->hChd = kcalloc(nrChannels, sizeof(virtualChanData), GFP_KERNEL);
-	if (!chs->hChd) {
+	hChd = kcalloc(nrChannels, sizeof(virtualChanData), GFP_KERNEL);
+	if (!hChd) {
 		goto hChd_alloc_err;
 	}
 
 	// Init array and hwChanData
 	for (chNr = 0; chNr < nrChannels; chNr++) {
-		chs->dataPtrArray[chNr] = &chs->vChd[chNr];
-		chs->vChd[chNr].hwChanData = &chs->hChd[chNr];
-		chs->vChd[chNr].minorNr = -1; // No preset minor number
+		vCard->chanData[chNr] = &vChd[chNr];
+		vChd[chNr].hwChanData = &hChd[chNr];
+		vChd[chNr].minorNr = -1; // No preset minor number
 	}
-	vCard->chanData = chs->dataPtrArray;
 
 	// Find out type of card i.e. N/O channels etc
 	if (virtualProbe(vCard)) {
@@ -682,14 +677,12 @@ static int virtualInitOne(void)
 	return 1;
 
 probe_err:
-	kfree(chs->hChd);
+	kfree(hChd);
 hChd_alloc_err:
-	kfree(chs->vChd);
+	kfree(vChd);
 vChd_alloc_err:
-	kfree(chs->dataPtrArray);
-dataPtrArray_alloc_err:
-	kfree(chs);
-chan_alloc_err:
+	kfree(vCard->chanData);
+vCard_chanData_alloc_err:
 	kfree(vCard);
 card_alloc_err:
 
@@ -700,7 +693,6 @@ static void virtualRemoveOne(VCanCardData* vCard)
 {
 	VCanChanData* vChan;
 	int chNr;
-	ChanHelperStruct* chs;
 
 	for (chNr = 0; chNr < vCard->nrChannels; chNr++) {
 		vChan = vCard->chanData[chNr];
@@ -711,10 +703,8 @@ static void virtualRemoveOne(VCanCardData* vCard)
 		}
 	}
 
-	chs = (ChanHelperStruct*) vCard->chanData;
-	kfree(chs->hChd);
-	kfree(chs->vChd);
-	kfree(chs->dataPtrArray);
+	kfree(vCard->chanData[0]->hwChanData);
+	kfree(vCard->chanData[0]);
 	kfree(vCard->chanData);
 	kfree(vCard);
 }

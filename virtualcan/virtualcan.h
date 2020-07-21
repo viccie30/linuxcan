@@ -96,11 +96,4 @@ typedef struct virtualCardData {
 	unsigned pciIf;
 } virtualCardData;
 
-// Helper struct for allocation
-typedef struct {
-	VCanChanData** dataPtrArray;
-	VCanChanData* vChd;
-	virtualChanData* hChd;
-} ChanHelperStruct;
-
 #endif /* _VIRTUAL_HW_IF_H_ */
